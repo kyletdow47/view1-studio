@@ -70,9 +70,7 @@ export const useUploadStore = create<UploadState>((set, get) => {
         file: task.file,
         storagePath: task.storagePath,
         mimeType: task.mimeType,
-        tusUploadUrl: get().items[task.fileHash]?.bytesUploaded
-          ? null // tus uses fingerprint-based resumption internally
-          : null,
+        tusUploadUrl: null, // tus uses fingerprint-based resumption internally
         supabaseUrl: SUPABASE_URL,
         supabaseAnonKey: SUPABASE_ANON_KEY,
         onProgress: (bytesUploaded) => {
@@ -85,7 +83,7 @@ export const useUploadStore = create<UploadState>((set, get) => {
                 status: 'complete',
                 bytesUploaded: task.file.size,
                 tusUploadUrl: uploadUrl,
-              })
+              } as Partial<UploadItem> & { tusUploadUrl?: string })
               await insertMediaRow(task)
             } catch (err) {
               console.error('Post-upload error', err)
@@ -160,7 +158,7 @@ export const useUploadStore = create<UploadState>((set, get) => {
         try {
           const fileHash = await computeFileIdentity(file)
 
-          // Check for already-completed upload
+          // Check for already-completed upload (dedup)
           const existing = await getUploadRecord(fileHash)
           if (existing?.status === 'complete') continue
 

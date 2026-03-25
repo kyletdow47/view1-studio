@@ -44,8 +44,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Redirect authenticated users away from /auth/*
-  if (pathname.startsWith('/auth') && user) {
+  // Redirect authenticated users away from /auth/* — except /auth/reset
+  // (password-reset flow: user arrives with a session after clicking the email link)
+  const isAuthResetRoute = pathname.startsWith('/auth/reset')
+  if (pathname.startsWith('/auth') && !isAuthResetRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

@@ -4,11 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 
-export default function LoginPage() {
-  const { signIn, signInWithGoogle } = useAuth()
+export default function SignupPage() {
+  const { signUp, signInWithGoogle } = useAuth()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
@@ -17,9 +19,10 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      await signIn(email, password)
+      await signUp(email, password, fullName)
+      setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in')
+      setError(err instanceof Error ? err.message : 'Failed to create account')
       setLoading(false)
     }
   }
@@ -30,17 +33,39 @@ export default function LoginPage() {
     try {
       await signInWithGoogle()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in with Google')
+      setError(err instanceof Error ? err.message : 'Failed to sign up with Google')
       setGoogleLoading(false)
     }
+  }
+
+  if (success) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg text-center space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Check your email</h2>
+          <p className="text-sm text-gray-500">
+            We&apos;ve sent a confirmation link to <strong>{email}</strong>. Click the link to
+            activate your account.
+          </p>
+          <Link href="/auth/login" className="block text-sm font-medium text-indigo-600 hover:text-indigo-500">
+            Back to sign in
+          </Link>
+        </div>
+      </main>
+    )
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Sign in to View1 Studio</h1>
-          <p className="mt-1 text-sm text-gray-500">Welcome back</p>
+          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
+          <p className="mt-1 text-sm text-gray-500">Start sorting photos smarter</p>
         </div>
 
         {error && (
@@ -82,6 +107,22 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label htmlFor="full-name" className="block text-sm font-medium text-gray-700">
+              Full name
+            </label>
+            <input
+              id="full-name"
+              type="text"
+              autoComplete="name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="Jane Smith"
+            />
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
             </label>
@@ -98,26 +139,19 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <Link
-                href="/auth/reset"
-                className="text-xs text-indigo-600 hover:text-indigo-500"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
               id="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="••••••••"
+              placeholder="Min. 8 characters"
             />
           </div>
 
@@ -126,14 +160,14 @@ export default function LoginPage() {
             disabled={loading || googleLoading}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500">
-          Don&apos;t have an account?{' '}
-          <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Sign up
+          Already have an account?{' '}
+          <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Sign in
           </Link>
         </p>
       </div>
