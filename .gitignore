@@ -35,3 +35,4 @@ agents/results/*
 
 # Turbo
 .turbo/
+.vercel

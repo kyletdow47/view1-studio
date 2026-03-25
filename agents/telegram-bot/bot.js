@@ -18,6 +18,8 @@ const path = require('path');
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = parseInt(process.env.TELEGRAM_CHAT_ID);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const PROJECT_DIR = process.env.PROJECT_DIR || '/Users/kyle/view1-studio';
 const RESULTS_DIR = path.join(PROJECT_DIR, 'agents', 'results');
 const TASKS_DIR = path.join(PROJECT_DIR, 'agents', 'tasks');
@@ -99,6 +101,76 @@ function addEvent(type, agentId, message) {
   // Keep last 200 events
   if (state.events.length > 200) state.events = state.events.slice(0, 200);
   saveState();
+
+  // Sync agent status to Supabase dashboard
+  if (agentId && AGENTS[agentId]) {
+    const agentState = state.agents[agentId] || {};
+    syncAgentToSupabase(agentId, {
+      status: agentState.status || (type === 'launch' ? 'running' : type === 'stop' ? 'idle' : type === 'complete' ? 'completed' : 'idle'),
+      current_task: agentState.task || null,
+      last_active: new Date().toISOString(),
+    });
+  }
+
+  // Log to Supabase activity_log
+  logActivityToSupabase(type, message, { agentId });
+}
+
+// ============================================================================
+// SUPABASE DASHBOARD SYNC
+// ============================================================================
+
+async function syncAgentToSupabase(agentId, data) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/agents?id=eq.${agentId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) log(`Supabase sync failed for ${agentId}: ${res.status}`, 'warn');
+  } catch (e) {
+    log(`Supabase sync error for ${agentId}: ${e.message}`, 'warn');
+  }
+}
+
+async function logActivityToSupabase(action, details, metadata = {}) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ action, details, source: 'telegram_bot', metadata }),
+    });
+  } catch (e) {
+    log(`Activity log error: ${e.message}`, 'warn');
+  }
+}
+
+async function syncAllAgentsToSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  for (const [id, info] of Object.entries(AGENTS)) {
+    const agentState = state.agents[id] || {};
+    const isRunning = isAgentRunning(id);
+    const status = isRunning ? 'running' : (agentState.status || 'idle');
+    await syncAgentToSupabase(id, {
+      status,
+      current_task: agentState.task || null,
+      last_active: agentState.startTime || null,
+      tasks_completed: agentState.tasksCompleted || 0,
+    });
+  }
+  log('Full Supabase sync completed');
 }
 
 // ============================================================================
@@ -750,6 +822,11 @@ cron.schedule('*/30 * * * *', () => {
   });
 });
 
+// Supabase full sync — every 5 minutes
+cron.schedule('*/5 * * * *', () => {
+  syncAllAgentsToSupabase();
+});
+
 // ============================================================================
 // EXPRESS API (for Vercel Dashboard)
 // ============================================================================
@@ -840,4 +917,85 @@ log(`Dashboard API on port ${API_PORT}`);
 send(`🤖 *View1 Build Manager online*
 ${Object.keys(AGENTS).length} agents registered
 Dashboard API on port ${API_PORT}
+Supabase sync: ${SUPABASE_URL ? 'enabled' : 'disabled'}
 Type /help for commands`);
+
+// Initial Supabase sync on startup
+syncAllAgentsToSupabase();
+
+// ============================================================================
+// CLAUDE AI ASSISTANT — conversational layer
+// ============================================================================
+
+const https = require('https');
+
+async function askClaude(userMessage) {
+  const sessions = tmuxSessions();
+  const prs = getOpenPRs();
+  const runningAgents = Object.keys(AGENTS).filter(id => isAgentRunning(id));
+
+  const systemPrompt = `You are Jarvis, the AI build manager for View1 Studio — a photo sorting SaaS being built by Kyle. You manage 23 AI agents running on a Mac Mini via Claude Code and tmux.
+
+Current system state:
+- Running agents: ${runningAgents.length > 0 ? runningAgents.join(', ') : 'none'}
+- Open PRs: ${prs.length > 0 ? prs.map(p => `#${p.number} ${p.title}`).join(', ') : 'none'}
+- Total agent runs: ${state.metrics.agentRuns}
+- PRs merged: ${state.metrics.prsMerged}
+- tmux sessions: ${sessions.join(', ') || 'none'}
+
+Available agents: ${Object.entries(AGENTS).map(([id, a]) => `${id} (${a.name})`).join(', ')}
+
+You can tell Kyle to use slash commands like /launch, /stop, /logs, /prs, /status, /health.
+Be concise, direct, and helpful. You are running on a Mac Mini at 192.168.1.136.`;
+
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+    const req = https.request({
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed.content?.[0]?.text || 'No response from Claude.');
+        } catch (e) {
+          reject(new Error('Failed to parse Claude response'));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+// Catch all non-command messages and route to Claude
+bot.on('message', async (msg) => {
+  if (!auth(msg)) return;
+  if (!msg.text) return;
+  if (msg.text.startsWith('/')) return; // let slash commands handle themselves
+
+  try {
+    await bot.sendChatAction(CHAT_ID, 'typing');
+    const reply = await askClaude(msg.text);
+    send(reply);
+  } catch (e) {
+    send(`❌ Claude error: ${e.message}`);
+    log('Claude API error: ' + e.message, 'error');
+  }
+});

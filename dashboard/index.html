@@ -183,6 +183,7 @@ body.light .topbar { background: rgba(245, 245, 247, 0.85); }
   padding: 0.75rem; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
 }
 .hq-agent:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.hq-agent.status-idle { border-color: var(--border); }
 .hq-agent.status-running { border-color: var(--accent); }
 .hq-agent.status-running::after {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
@@ -2744,11 +2745,22 @@ function getAgentXP(agent) {
   return Math.min(100, Math.max(0, progress));
 }
 
+function normalizeStatus(raw) {
+  if (!raw) return 'idle';
+  const s = String(raw).toLowerCase().trim();
+  if (s === 'running' || s === 'active' || s === 'in_progress' || s === 'in-progress') return 'running';
+  if (s === 'completed' || s === 'complete' || s === 'done' || s === 'success' || s === 'finished') return 'completed';
+  if (s === 'failed' || s === 'error' || s === 'crashed') return 'failed';
+  if (s === 'idle' || s === 'stopped' || s === 'waiting' || s === 'pending') return 'idle';
+  return 'idle';
+}
+
 function mergeAgentState(supaAgent) {
   const localState = state.agents[supaAgent.id] || {};
+  const supaStatus = normalizeStatus(supaAgent.status);
   return {
     ...supaAgent,
-    status: supaAgent.status !== 'idle' ? supaAgent.status : (localState.status || 'idle'),
+    status: supaStatus !== 'idle' ? supaStatus : normalizeStatus(localState.status || 'idle'),
     current_task: supaAgent.current_task || localState.currentTask || null,
     tasks_completed: supaAgent.tasks_completed || 0,
   };
@@ -2766,7 +2778,7 @@ function renderHQ() {
   } else {
     allAgents = AGENTS.map(a => ({
       id: a.id, name: a.name, department: a.dept.toLowerCase(),
-      status: (state.agents[a.id] || {}).status || 'idle',
+      status: normalizeStatus((state.agents[a.id] || {}).status),
       current_task: null, tasks_completed: 0,
     }));
   }
@@ -2950,7 +2962,7 @@ function renderAgents() {
 
 function setAgentStatus(agentId, status) {
   if (!state.agents[agentId]) state.agents[agentId] = {};
-  state.agents[agentId].status = status;
+  state.agents[agentId].status = normalizeStatus(status);
   state.agents[agentId].lastActive = new Date().toISOString();
   saveState();
   renderAgents();
