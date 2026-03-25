@@ -58,7 +58,8 @@ export async function classify(
   }
 
   const pipe = pipelineInstance as ClassificationPipeline
-  const rawOutput = (await pipe(imageSource, LABEL_STRINGS, { topk: topK })) as RawPipelineResult
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawOutput = (await (pipe as any)(imageSource, LABEL_STRINGS, { topk: topK })) as RawPipelineResult
 
   return rawOutput.map((item) => ({
     photoId,

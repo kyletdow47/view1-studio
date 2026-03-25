@@ -10,8 +10,8 @@ import {
   Share2,
   CheckCircle,
   XCircle,
-  Twitter,
-  Linkedin,
+  
+  
   Check,
 } from 'lucide-react'
 import { WaitlistModal } from './WaitlistModal'
@@ -448,7 +448,7 @@ export function LandingPage() {
               className="text-muted hover:text-white transition-colors"
               aria-label="View1 Studio on X / Twitter"
             >
-              <Twitter size={18} />
+              <Share2 size={18} />
             </a>
             <a
               href="https://linkedin.com/company/view1studio"
@@ -457,7 +457,7 @@ export function LandingPage() {
               className="text-muted hover:text-white transition-colors"
               aria-label="View1 Studio on LinkedIn"
             >
-              <Linkedin size={18} />
+              <Share2 size={18} />
             </a>
           </nav>
         </div>
