@@ -82,8 +82,7 @@ export const useUploadStore = create<UploadState>((set, get) => {
               await updateItem(task.fileHash, {
                 status: 'complete',
                 bytesUploaded: task.file.size,
-                tusUploadUrl: uploadUrl,
-              } as Partial<UploadItem> & { tusUploadUrl?: string })
+              })
               await insertMediaRow(task)
             } catch (err) {
               console.error('Post-upload error', err)
