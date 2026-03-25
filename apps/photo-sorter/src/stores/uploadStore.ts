@@ -76,7 +76,7 @@ export const useUploadStore = create<UploadState>((set, get) => {
         onProgress: (bytesUploaded) => {
           void updateItem(task.fileHash, { bytesUploaded, status: 'uploading' })
         },
-        onSuccess: (uploadUrl) => {
+        onSuccess: () => {
           void (async () => {
             try {
               await updateItem(task.fileHash, {
