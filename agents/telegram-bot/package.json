@@ -1,0 +1,16 @@
+{
+  "name": "view1-telegram-bot",
+  "version": "1.0.0",
+  "description": "AI Agent Team Manager via Telegram for View1 Studio",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "express": "^4.21.0"
+  }
+}
