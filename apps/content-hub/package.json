@@ -1,0 +1,11 @@
+{
+  "name": "@view1/content-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'content-hub: not yet implemented'",
+    "build": "echo 'content-hub: not yet implemented'",
+    "lint": "echo 'content-hub: no lint configured yet'",
+    "test": "echo 'content-hub: no tests yet'"
+  }
+}

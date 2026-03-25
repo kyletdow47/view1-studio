@@ -1,0 +1,6 @@
+{
+  "name": "@view1/config",
+  "version": "0.0.0",
+  "private": true,
+  "files": ["*.json", "*.js"]
+}

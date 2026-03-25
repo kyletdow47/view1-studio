@@ -1,0 +1,22 @@
+{
+  "name": "view1-telegram-bot",
+  "version": "1.0.0",
+  "description": "AI Agent Team Manager via Telegram for View1 Studio",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["telegram", "bot", "claude", "ai", "agents"],
+  "author": "Kyle",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "axios": "^1.13.6",
+    "dotenv": "^17.3.1",
+    "node-cron": "^4.2.1",
+    "node-telegram-bot-api": "^0.67.0",
+    "simple-git": "^3.33.0"
+  }
+}

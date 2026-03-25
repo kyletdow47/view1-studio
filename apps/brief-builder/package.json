@@ -1,0 +1,11 @@
+{
+  "name": "@view1/brief-builder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'brief-builder: not yet implemented'",
+    "build": "echo 'brief-builder: not yet implemented'",
+    "lint": "echo 'brief-builder: no lint configured yet'",
+    "test": "echo 'brief-builder: no tests yet'"
+  }
+}
