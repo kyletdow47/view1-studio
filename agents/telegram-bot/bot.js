@@ -1,807 +1,1070 @@
-// bot.js — Telegram Agent Manager Bot
-// Handles all commands, notifications, and agent lifecycle management
+#!/usr/bin/env node
+// ============================================================================
+// View1 Build Manager — Telegram Bot
+// Controls 22 AI agents, manages PRs, sends reports, serves dashboard API
+// ============================================================================
 
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
-const { execSync, spawn } = require('child_process');
+const express = require('express');
+const { execSync, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
-const Anthropic = require('@anthropic-ai/sdk');
 
 // ============================================================================
-// INITIALIZATION
+// CONFIG
 // ============================================================================
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
-const chatId = parseInt(process.env.TELEGRAM_CHAT_ID);
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const projectDir = process.env.PROJECT_DIR || '/Users/kyle/view1-studio';
-const agentsDir = process.env.AGENTS_DIR || path.join(projectDir, 'agents');
-const resultsDir = process.env.RESULTS_DIR || path.join(agentsDir, 'results');
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const CHAT_ID = parseInt(process.env.TELEGRAM_CHAT_ID);
+const PROJECT_DIR = process.env.PROJECT_DIR || '/Users/kyle/view1-studio';
+const RESULTS_DIR = path.join(PROJECT_DIR, 'agents', 'results');
+const TASKS_DIR = path.join(PROJECT_DIR, 'agents', 'tasks');
+const STATE_FILE = path.join(RESULTS_DIR, 'bot-state.json');
+const LOG_FILE = path.join(RESULTS_DIR, 'bot.log');
+const API_PORT = 3847; // Dashboard API port
 
-const bot = new TelegramBot(token, { polling: true });
+// Ensure dirs exist
+[RESULTS_DIR, TASKS_DIR].forEach(d => fs.mkdirSync(d, { recursive: true }));
 
-// Ensure results directory exists
-if (!fs.existsSync(resultsDir)) {
-  fs.mkdirSync(resultsDir, { recursive: true });
-}
+// ============================================================================
+// AGENT DEFINITIONS
+// ============================================================================
 
-// Bot state tracking
-const botState = {
-  activeAgents: {},
-  pendingPRs: [],
-  lastNotification: new Date(),
-  agentMetrics: {}
+const AGENTS = {
+  // Engineering
+  'eng-arch':      { dept: 'Engineering', name: 'Architect',          icon: '🏗️' },
+  'eng-auth':      { dept: 'Engineering', name: 'Auth Engineer',      icon: '🔐' },
+  'eng-ui':        { dept: 'Engineering', name: 'UI Engineer',        icon: '🎨' },
+  'eng-ai':        { dept: 'Engineering', name: 'AI Engineer',        icon: '🧠' },
+  'eng-upload':    { dept: 'Engineering', name: 'Upload Engineer',    icon: '📤' },
+  'eng-gallery':   { dept: 'Engineering', name: 'Gallery Engineer',   icon: '🖼️' },
+  'eng-stripe':    { dept: 'Engineering', name: 'Payments Engineer',  icon: '💳' },
+  'eng-workspace': { dept: 'Engineering', name: 'Workspace Engineer', icon: '📐' },
+  // Marketing
+  'mktg-landing':  { dept: 'Marketing',   name: 'Landing Page',      icon: '🌐' },
+  'mktg-seo':      { dept: 'Marketing',   name: 'SEO Strategist',    icon: '🔍' },
+  'mktg-email':    { dept: 'Marketing',   name: 'Email Marketer',    icon: '📧' },
+  'mktg-research': { dept: 'Marketing',   name: 'Competitive Intel', icon: '🕵️' },
+  // Content
+  'content-social':{ dept: 'Content',     name: 'Social Media',      icon: '📱' },
+  'content-blog':  { dept: 'Content',     name: 'Blog Writer',       icon: '✍️' },
+  'content-video': { dept: 'Content',     name: 'Video Producer',    icon: '🎬' },
+  'content-trend': { dept: 'Content',     name: 'Trend Research',    icon: '📈' },
+  // QA & Security
+  'qa-test':       { dept: 'QA',          name: 'QA Engineer',       icon: '🧪' },
+  'qa-security':   { dept: 'QA',          name: 'Security Auditor',  icon: '🛡️' },
+  'qa-review':     { dept: 'QA',          name: 'Code Reviewer',     icon: '👁️' },
+  // Research
+  'research-industry':  { dept: 'Research', name: 'Industry Analyst',icon: '🔬' },
+  'research-analytics': { dept: 'Research', name: 'Data Analyst',    icon: '📊' },
+  // Business
+  'biz-strategy':  { dept: 'Business',    name: 'Strategist',        icon: '♟️' },
+  'biz-finance':   { dept: 'Business',    name: 'Finance Monitor',   icon: '💰' },
 };
 
-// Logging utility
-function log(message, level = 'info') {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-  console.log(logMessage);
-
-  // Write to log file
-  const logFile = path.join(resultsDir, 'telegram-bot.log');
-  fs.appendFileSync(logFile, logMessage + '\n');
-}
-
 // ============================================================================
-// UTILITY FUNCTIONS
+// STATE MANAGEMENT
 // ============================================================================
 
-function sanitizeAgentId(input) {
-  return input.toLowerCase().replace(/[^a-z0-9-]/g, '');
-}
+let state = {
+  agents: {},       // { agentId: { status, startTime, task, branch, prNumber } }
+  events: [],       // { time, type, agentId, message }
+  metrics: { prsCreated: 0, prsMerged: 0, agentRuns: 0, totalMinutes: 0 },
+  taskQueue: [],    // { id, agentId, prompt, priority, createdAt, status: 'queued'|'running'|'done' }
+  delegationRules: [], // { fromAgent, toAgent, trigger: 'on_complete', taskPrompt }
+  startedAt: new Date().toISOString(),
+};
 
-function formatMarkdown(text) {
-  // Escape special markdown characters
-  return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-}
-
-function escapeMarkdown(text) {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/\*/g, '\\*')
-    .replace(/_/g, '\\_')
-    .replace(/\[/g, '\\[')
-    .replace(/\]/g, '\\]')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-    .replace(/~/g, '\\~')
-    .replace(/`/g, '\\`')
-    .replace(/>/g, '\\>')
-    .replace(/#/g, '\\#')
-    .replace(/\+/g, '\\+')
-    .replace(/\|/g, '\\|')
-    .replace(/{/g, '\\{')
-    .replace(/}/g, '\\}')
-    .replace(/\./g, '\\.')
-    .replace(/!/g, '\\!');
-}
-
-function buildKeyboard(buttons) {
-  return {
-    reply_markup: {
-      inline_keyboard: buttons.map(row =>
-        Array.isArray(row[0])
-          ? row.map(btn => ({
-              text: btn.text,
-              callback_data: btn.data
-            }))
-          : [{
-              text: row.text,
-              callback_data: row.data
-            }]
-      )
-    }
-  };
-}
-
-// Send message with error handling
-async function sendMessage(text, options = {}) {
+function loadState() {
   try {
-    const defaultOptions = {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    };
-    await bot.sendMessage(chatId, text, { ...defaultOptions, ...options });
-  } catch (error) {
-    log(`Failed to send message: ${error.message}`, 'error');
-  }
-}
-
-// ============================================================================
-// AGENT MANAGEMENT
-// ============================================================================
-
-function getAllAgents() {
-  // Define all 22 agents across 6 departments
-  return {
-    'engineering': [
-      { id: 'eng-auth', name: 'Authentication System', status: 'idle' },
-      { id: 'eng-ui', name: 'UI/Design System', status: 'idle' },
-      { id: 'eng-api', name: 'REST API', status: 'idle' },
-      { id: 'eng-pipeline', name: 'AI Pipeline', status: 'idle' },
-      { id: 'eng-upload', name: 'File Upload System', status: 'idle' },
-      { id: 'eng-gallery', name: 'Client Gallery', status: 'idle' },
-      { id: 'eng-stripe', name: 'Payment Integration', status: 'idle' }
-    ],
-    'marketing': [
-      { id: 'mkt-social', name: 'Social Media Manager', status: 'idle' },
-      { id: 'mkt-email', name: 'Email Campaigns', status: 'idle' },
-      { id: 'mkt-content', name: 'Content Strategy', status: 'idle' }
-    ],
-    'content': [
-      { id: 'ctn-blog', name: 'Blog Writer', status: 'idle' },
-      { id: 'ctn-docs', name: 'Documentation', status: 'idle' },
-      { id: 'ctn-video', name: 'Video Scripts', status: 'idle' }
-    ],
-    'design': [
-      { id: 'des-brand', name: 'Brand Identity', status: 'idle' },
-      { id: 'des-landing', name: 'Landing Page Design', status: 'idle' }
-    ],
-    'qa': [
-      { id: 'qa-functional', name: 'Functional Testing', status: 'idle' },
-      { id: 'qa-integration', name: 'Integration Tests', status: 'idle' },
-      { id: 'qa-security', name: 'Security Audit', status: 'idle' }
-    ],
-    'devops': [
-      { id: 'devops-infra', name: 'Infrastructure', status: 'idle' },
-      { id: 'devops-deploy', name: 'Deployment Pipeline', status: 'idle' }
-    ]
-  };
-}
-
-function getAgentStatus(agentId) {
-  // Check if agent tmux session exists and is running
-  try {
-    const result = execSync(`tmux list-sessions -F "#{session_name}"`, {
-      encoding: 'utf8'
-    });
-    const sessions = result.trim().split('\n');
-    const isRunning = sessions.includes(agentId);
-
-    if (isRunning) {
-      const stateFile = path.join(resultsDir, `${agentId}.state`);
-      if (fs.existsSync(stateFile)) {
-        const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-        return {
-          status: 'running',
-          elapsed: Math.round((Date.now() - state.startTime) / 1000 / 60), // minutes
-          task: state.task || 'Unknown'
-        };
-      }
-      return { status: 'running', elapsed: 0, task: 'Running' };
+    if (fs.existsSync(STATE_FILE)) {
+      state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
     }
+  } catch (e) { log('Failed to load state: ' + e.message, 'warn'); }
+}
+
+function saveState() {
+  try {
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  } catch (e) { log('Failed to save state: ' + e.message, 'warn'); }
+}
+
+function addEvent(type, agentId, message) {
+  state.events.unshift({
+    time: new Date().toISOString(),
+    type,
+    agentId,
+    message
+  });
+  // Keep last 200 events
+  if (state.events.length > 200) state.events = state.events.slice(0, 200);
+  saveState();
+}
+
+// ============================================================================
+// LOGGING
+// ============================================================================
+
+function log(msg, level = 'info') {
+  const ts = new Date().toISOString();
+  const line = `[${ts}] [${level.toUpperCase()}] ${msg}`;
+  console.log(line);
+  try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch (e) {}
+}
+
+// ============================================================================
+// SHELL HELPERS
+// ============================================================================
+
+function sh(cmd, opts = {}) {
+  try {
+    return execSync(cmd, {
+      encoding: 'utf8',
+      cwd: PROJECT_DIR,
+      timeout: opts.timeout || 30000,
+      ...opts
+    }).trim();
   } catch (e) {
-    // tmux might not be available or no sessions exist
+    return e.stderr || e.message;
   }
-
-  return { status: 'idle', elapsed: 0, task: 'None' };
 }
 
-function getAgentStatusEmoji(status) {
-  if (status === 'running') return '🟢';
-  if (status === 'idle') return '⚪';
-  if (status === 'failed') return '🔴';
-  return '⚪';
+function shAsync(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { cwd: PROJECT_DIR, encoding: 'utf8', timeout: 300000 }, (err, stdout, stderr) => {
+      if (err) reject(err);
+      else resolve(stdout.trim());
+    });
+  });
+}
+
+function tmuxSessions() {
+  try {
+    return sh('tmux list-sessions -F "#{session_name}" 2>/dev/null').split('\n').filter(Boolean);
+  } catch { return []; }
+}
+
+function isAgentRunning(agentId) {
+  const sessions = tmuxSessions();
+  if (!sessions.includes(agentId)) return false;
+  // Check if claude is actively running in the session
+  try {
+    const pid = sh(`tmux list-panes -t "${agentId}" -F "#{pane_pid}" 2>/dev/null`);
+    const children = sh(`pgrep -P ${pid} 2>/dev/null`);
+    return children.length > 0;
+  } catch { return false; }
+}
+
+function getOpenPRs() {
+  try {
+    const raw = sh('gh pr list --json number,title,headBranch,author,createdAt,additions,deletions --state open', { timeout: 15000 });
+    return JSON.parse(raw || '[]');
+  } catch { return []; }
 }
 
 // ============================================================================
-// COMMAND HANDLERS
+// TELEGRAM BOT
 // ============================================================================
 
-// /help command
-bot.onText(/^\/help$/, async (msg) => {
-  const helpText = `*View1 Build Manager — Commands*
+const bot = new TelegramBot(TOKEN, { polling: true });
 
-🚀 *Agent Control*
-- \`/agents\` — List all 22 agents and status
-- \`/launch <agent-id>\` — Launch an agent task
-- \`/logs <agent-id>\` — Show agent output (last 50 lines)
-- \`/status\` — Overall build status and metrics
+// Security: only respond to your chat
+function auth(msg) {
+  return msg.chat.id === CHAT_ID;
+}
 
-📋 *Pull Request Management*
-- \`/approve <pr-number>\` — Approve a PR
-- \`/merge <pr-number>\` — Merge a PR
+async function send(text, opts = {}) {
+  try {
+    return await bot.sendMessage(CHAT_ID, text, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
+      ...opts
+    });
+  } catch (e) {
+    // Fallback: send without markdown if parsing fails
+    try {
+      return await bot.sendMessage(CHAT_ID, text.replace(/[*_`\[\]]/g, ''), opts);
+    } catch (e2) { log('Send failed: ' + e2.message, 'error'); }
+  }
+}
 
-📊 *Reporting*
-- \`/metrics\` — Show weekly build metrics
-- \`/report\` — Generate full weekly report
+async function sendHTML(text, opts = {}) {
+  try {
+    return await bot.sendMessage(CHAT_ID, text, {
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+      ...opts
+    });
+  } catch (e) {
+    log('Send HTML failed: ' + e.message, 'error');
+  }
+}
 
-⚙️ *Settings*
-- \`/notify\` — Toggle notifications
+// ── /start & /help ──────────────────────────────────────────────────────────
 
-*Example:*
-\`/launch eng-auth\`
-\`/approve 12\`
-\`/metrics\`
-`;
+bot.onText(/^\/(start|help)$/, (msg) => {
+  if (!auth(msg)) return;
+  send(`🤖 *View1 Build Manager*
 
-  await sendMessage(helpText);
+*Agent Control*
+/status — Dashboard overview
+/agents — Full roster (22 agents)
+/launch \`agent-id\` — Start an agent
+/stop \`agent-id\` — Stop an agent
+/logs \`agent-id\` — Last 50 lines of output
+
+*Autonomous Delegation*
+/delegate \`agent-id\` \`prompt\` — Assign a task (auto-launches or queues)
+/chain \`agent1\` -> \`agent2\` \`prompt\` — Auto-launch agent2 when agent1 completes
+/queue — View pending tasks & chains
+/clearqueue — Clear all queued tasks & chains
+
+*Pull Requests*
+/prs — List open PRs
+/approve \`number\` — Approve a PR
+/merge \`number\` — Squash-merge a PR
+/diff \`number\` — View PR diff summary
+
+*Reports*
+/metrics — Build metrics
+/report — Weekly summary
+/events — Recent events (last 20)
+
+*System*
+/health — Mac Mini system health
+/sessions — Active tmux sessions`);
 });
 
-// /status command
+// ── /status ─────────────────────────────────────────────────────────────────
+
 bot.onText(/^\/status$/, async (msg) => {
-  try {
-    const agents = getAllAgents();
-    let statusText = '*📊 Agent Status*\n━━━━━━━━━━━━━━━━━\n';
+  if (!auth(msg)) return;
 
-    let totalRunning = 0;
-    const statusByDept = {};
+  const sessions = tmuxSessions();
+  let running = 0, idle = 0;
 
-    for (const [dept, agentList] of Object.entries(agents)) {
-      statusByDept[dept] = [];
-      for (const agent of agentList) {
-        const info = getAgentStatus(agent.id);
-        const emoji = getAgentStatusEmoji(info.status);
+  Object.keys(AGENTS).forEach(id => {
+    if (isAgentRunning(id)) running++;
+    else idle++;
+  });
 
-        if (info.status === 'running') totalRunning++;
+  const prs = getOpenPRs();
 
-        statusByDept[dept].push({
-          id: agent.id,
-          name: agent.name,
-          emoji,
-          info
-        });
+  let text = `📊 *View1 Status*\n\n`;
+  text += `🟢 Running: *${running}*  ⚪ Idle: *${idle}*\n`;
+  text += `📋 Open PRs: *${prs.length}*\n`;
+  text += `📈 Total runs: *${state.metrics.agentRuns}*\n`;
+  text += `✅ PRs merged: *${state.metrics.prsMerged}*\n\n`;
+
+  // List running agents
+  if (running > 0) {
+    text += `*Active Agents:*\n`;
+    Object.entries(AGENTS).forEach(([id, info]) => {
+      if (isAgentRunning(id)) {
+        const agentState = state.agents[id];
+        const elapsed = agentState?.startTime
+          ? Math.round((Date.now() - new Date(agentState.startTime).getTime()) / 60000)
+          : '?';
+        text += `${info.icon} \`${id}\` — ${elapsed}min\n`;
       }
-    }
-
-    for (const [dept, agents] of Object.entries(statusByDept)) {
-      statusText += `\n*${dept.charAt(0).toUpperCase() + dept.slice(1)}*\n`;
-      for (const agent of agents) {
-        const elapsed = agent.info.elapsed > 0 ? ` (${agent.info.elapsed}m)` : '';
-        statusText += `${agent.emoji} \`${agent.id}\`${elapsed}\n`;
-      }
-    }
-
-    // Try to get recent git stats
-    try {
-      const commitCount = execSync(
-        `cd ${projectDir} && git log --oneline --since="1 week ago" | wc -l`,
-        { encoding: 'utf8' }
-      ).trim();
-
-      statusText += `\n━━━━━━━━━━━━━━━━━\n`;
-      statusText += `🟢 *Running:* ${totalRunning} agents\n`;
-      statusText += `📝 *PRs merged:* ${commitCount} this week\n`;
-    } catch (e) {
-      // Git info not available
-    }
-
-    await sendMessage(statusText);
-  } catch (error) {
-    log(`/status error: ${error.message}`, 'error');
-    await sendMessage(`❌ Error getting status: ${error.message}`);
+    });
+    text += '\n';
   }
+
+  // List open PRs
+  if (prs.length > 0) {
+    text += `*Pending PRs:*\n`;
+    prs.forEach(pr => {
+      text += `#${pr.number} ${pr.title} (+${pr.additions}/-${pr.deletions})\n`;
+    });
+  }
+
+  // Recent events
+  const recent = state.events.slice(0, 5);
+  if (recent.length > 0) {
+    text += `\n*Recent:*\n`;
+    recent.forEach(e => {
+      const ago = Math.round((Date.now() - new Date(e.time).getTime()) / 60000);
+      text += `${ago}m ago: ${e.message}\n`;
+    });
+  }
+
+  send(text);
 });
 
-// /agents command
-bot.onText(/^\/agents$/, async (msg) => {
+// ── /agents ─────────────────────────────────────────────────────────────────
+
+bot.onText(/^\/agents$/, (msg) => {
+  if (!auth(msg)) return;
+
+  let text = `🤖 *Agent Roster*\n`;
+  let currentDept = '';
+
+  Object.entries(AGENTS).forEach(([id, info]) => {
+    if (info.dept !== currentDept) {
+      currentDept = info.dept;
+      text += `\n*${currentDept}*\n`;
+    }
+    const running = isAgentRunning(id);
+    const emoji = running ? '🟢' : '⚪';
+    text += `${emoji} ${info.icon} \`${id}\` ${info.name}\n`;
+  });
+
+  send(text);
+});
+
+// ── /launch <agent-id> ──────────────────────────────────────────────────────
+
+bot.onText(/^\/launch (.+)$/, async (msg, match) => {
+  if (!auth(msg)) return;
+
+  const agentId = match[1].trim().toLowerCase();
+
+  if (!AGENTS[agentId]) {
+    send(`❌ Unknown agent: \`${agentId}\`\nUse /agents to see the full roster.`);
+    return;
+  }
+
+  if (isAgentRunning(agentId)) {
+    send(`⚠️ \`${agentId}\` is already running. Use /stop ${agentId} first.`);
+    return;
+  }
+
+  // Look for task file
+  const dept = AGENTS[agentId].dept.toLowerCase();
+  const taskDir = path.join(TASKS_DIR, dept);
+  let taskFile = null;
+
+  if (fs.existsSync(taskDir)) {
+    const files = fs.readdirSync(taskDir).filter(f => f.includes(agentId.replace(`${dept.substring(0,3)}-`, '')));
+    if (files.length > 0) taskFile = path.join(taskDir, files[0]);
+  }
+
+  if (!taskFile) {
+    // Check for any task file matching agent ID
+    const allTaskDirs = fs.existsSync(TASKS_DIR) ? fs.readdirSync(TASKS_DIR) : [];
+    for (const dir of allTaskDirs) {
+      const dirPath = path.join(TASKS_DIR, dir);
+      if (!fs.statSync(dirPath).isDirectory()) continue;
+      const files = fs.readdirSync(dirPath);
+      const match = files.find(f => f.toLowerCase().includes(agentId.split('-').pop()));
+      if (match) { taskFile = path.join(dirPath, match); break; }
+    }
+  }
+
+  // Build the launch command
+  let launchCmd;
+  if (taskFile && fs.existsSync(taskFile)) {
+    const task = fs.readFileSync(taskFile, 'utf8');
+    send(`🚀 Launching \`${agentId}\` with task: ${path.basename(taskFile)}`);
+    launchCmd = `claude --worktree -p "${task.replace(/"/g, '\\"').substring(0, 8000)}" --allowedTools "Read,Write,Edit,Bash,Glob,Grep"`;
+  } else {
+    send(`🚀 Launching \`${agentId}\` in interactive mode (no task file found in agents/tasks/)`);
+    launchCmd = `claude`;
+  }
+
+  // Create/attach tmux session and run
   try {
-    const agents = getAllAgents();
-    let agentsText = '*🤖 All Agents (22 Total)*\n━━━━━━━━━━━━━━━━━\n';
+    sh(`tmux kill-session -t ${agentId} 2>/dev/null || true`);
+    sh(`tmux new-session -d -s ${agentId} -c "${PROJECT_DIR}"`);
+    sh(`tmux send-keys -t ${agentId} '${launchCmd}' Enter`);
 
-    let agentCount = 0;
-    for (const [dept, agentList] of Object.entries(agents)) {
-      agentsText += `\n*${dept.toUpperCase()}* (${agentList.length})\n`;
-      for (const agent of agentList) {
-        const info = getAgentStatus(agent.id);
-        const emoji = getAgentStatusEmoji(info.status);
-        agentsText += `${emoji} \`${agent.id}\` — ${agent.name}\n`;
-        agentCount++;
-      }
-    }
+    state.agents[agentId] = {
+      status: 'running',
+      startTime: new Date().toISOString(),
+      task: taskFile ? path.basename(taskFile) : 'interactive'
+    };
+    state.metrics.agentRuns++;
+    addEvent('launch', agentId, `${AGENTS[agentId].icon} \`${agentId}\` launched`);
 
-    agentsText += `\n━━━━━━━━━━━━━━━━━\n*Total:* ${agentCount} agents ready`;
-
-    await sendMessage(agentsText);
-  } catch (error) {
-    log(`/agents error: ${error.message}`, 'error');
-    await sendMessage(`❌ Error listing agents: ${error.message}`);
+    send(`✅ \`${agentId}\` is now running in tmux session`);
+  } catch (e) {
+    send(`❌ Failed to launch: ${e.message}`);
   }
 });
 
-// /launch <agent-id> <task> command
-bot.onText(/^\/launch\s+(\S+)(?:\s+(.+))?$/, async (msg, match) => {
+// ── /stop <agent-id> ────────────────────────────────────────────────────────
+
+bot.onText(/^\/stop (.+)$/, (msg, match) => {
+  if (!auth(msg)) return;
+  const agentId = match[1].trim().toLowerCase();
+
   try {
-    const agentId = sanitizeAgentId(match[1]);
-    const taskDesc = match[2] || 'Standard task';
-
-    // Validate agent exists
-    const allAgents = getAllAgents();
-    let agentFound = false;
-    for (const deptAgents of Object.values(allAgents)) {
-      if (deptAgents.find(a => a.id === agentId)) {
-        agentFound = true;
-        break;
-      }
+    sh(`tmux kill-session -t ${agentId} 2>/dev/null`);
+    if (state.agents[agentId]) {
+      state.agents[agentId].status = 'stopped';
     }
-
-    if (!agentFound) {
-      await sendMessage(`❌ Agent not found: \`${agentId}\`\nUse /agents to list available agents.`);
-      return;
-    }
-
-    // Create state file
-    const stateFile = path.join(resultsDir, `${agentId}.state`);
-    fs.writeFileSync(stateFile, JSON.stringify({
-      agentId,
-      task: taskDesc,
-      startTime: Date.now(),
-      status: 'running'
-    }));
-
-    // Create or attach to tmux session
-    try {
-      execSync(`tmux new-session -d -s ${agentId} -c ${projectDir}`, {
-        stdio: 'pipe'
-      });
-    } catch (e) {
-      // Session might already exist
-      execSync(`tmux send-keys -t ${agentId} C-c 2>/dev/null || true`);
-    }
-
-    log(`Launched agent: ${agentId} with task: ${taskDesc}`, 'info');
-
-    const emoji = '🚀';
-    await sendMessage(
-      `${emoji} *Launched ${agentId}*\n` +
-      `Task: ${taskDesc}\n` +
-      `Check status with: /logs ${agentId}`
-    );
-
-    // Simulate task completion notification after 10 seconds (for demo)
-    setTimeout(async () => {
-      const logFile = path.join(resultsDir, `${agentId}.log`);
-      if (fs.existsSync(logFile)) {
-        const logContent = fs.readFileSync(logFile, 'utf8');
-        const lines = logContent.split('\n').slice(-5);
-        await sendMessage(
-          `✅ *${agentId} task completed*\n` +
-          `Time: ~10 minutes\n` +
-          `Last output:\n\`\`\`\n${lines.join('\n')}\n\`\`\``
-        );
-      }
-    }, 10000);
-
-  } catch (error) {
-    log(`/launch error: ${error.message}`, 'error');
-    await sendMessage(`❌ Launch failed: ${error.message}`);
+    addEvent('stop', agentId, `⏹️ \`${agentId}\` stopped`);
+    send(`⏹️ \`${agentId}\` stopped.`);
+  } catch (e) {
+    send(`❌ Couldn't stop \`${agentId}\`: ${e.message}`);
   }
 });
 
-// /logs <agent-id> command
-bot.onText(/^\/logs\s+(\S+)$/, async (msg, match) => {
+// ── /logs <agent-id> ────────────────────────────────────────────────────────
+
+bot.onText(/^\/logs (.+)$/, (msg, match) => {
+  if (!auth(msg)) return;
+  const agentId = match[1].trim().toLowerCase();
+
   try {
-    const agentId = sanitizeAgentId(match[1]);
-    const logFile = path.join(resultsDir, `${agentId}.log`);
-
-    // Try to get output from tmux session
-    let output = '';
-    try {
-      output = execSync(`tmux capture-pane -t ${agentId} -p 2>/dev/null || echo "No session"`, {
-        encoding: 'utf8'
-      });
-    } catch (e) {
-      output = 'No active session for this agent.';
+    const output = sh(`tmux capture-pane -t ${agentId} -p -S -50 2>/dev/null`);
+    if (output) {
+      // Truncate for Telegram's 4096 char limit
+      const truncated = output.length > 3500 ? '...\n' + output.slice(-3500) : output;
+      send(`📋 *Logs: ${agentId}*\n\`\`\`\n${truncated}\n\`\`\``);
+    } else {
+      send(`⚪ No output from \`${agentId}\` (session may be idle)`);
     }
-
-    if (!output.trim()) {
-      output = 'No output captured yet.';
-    }
-
-    const lines = output.split('\n').slice(-50);
-    const logsText = `*📋 Logs — ${agentId}*\n\`\`\`\n${lines.join('\n')}\n\`\`\``;
-
-    await sendMessage(logsText);
-  } catch (error) {
-    log(`/logs error: ${error.message}`, 'error');
-    await sendMessage(`❌ Error getting logs: ${error.message}`);
+  } catch {
+    send(`❌ No active session for \`${agentId}\``);
   }
 });
 
-// /approve <pr-number> command
-bot.onText(/^\/approve\s+(\d+)$/, async (msg, match) => {
+// ── /prs ────────────────────────────────────────────────────────────────────
+
+bot.onText(/^\/prs$/, (msg) => {
+  if (!auth(msg)) return;
+
+  const prs = getOpenPRs();
+  if (prs.length === 0) {
+    send(`📋 No open PRs.`);
+    return;
+  }
+
+  let text = `📋 *Open Pull Requests*\n\n`;
+  prs.forEach(pr => {
+    text += `*#${pr.number}* ${pr.title}\n`;
+    text += `  Branch: \`${pr.headBranch}\`\n`;
+    text += `  +${pr.additions} / -${pr.deletions}\n\n`;
+  });
+
+  const buttons = prs.map(pr => ([
+    { text: `✅ Approve #${pr.number}`, data: `approve_${pr.number}` },
+    { text: `🔀 Merge #${pr.number}`, data: `merge_${pr.number}` }
+  ]));
+
+  send(text, {
+    reply_markup: { inline_keyboard: buttons }
+  });
+});
+
+// ── /approve <number> ───────────────────────────────────────────────────────
+
+bot.onText(/^\/approve (\d+)$/, async (msg, match) => {
+  if (!auth(msg)) return;
+  const pr = match[1];
+
   try {
-    const prNumber = match[1];
-
-    log(`Approving PR #${prNumber}`, 'info');
-
-    // Use gh CLI to approve PR
-    try {
-      execSync(`gh pr review ${prNumber} --approve`, {
-        cwd: projectDir,
-        stdio: 'pipe'
-      });
-    } catch (e) {
-      // Might not have gh CLI or PR doesn't exist
-      log(`gh pr review failed: ${e.message}`, 'warn');
-    }
-
-    await sendMessage(
-      `✅ *PR #${prNumber} approved*\n\n` +
-      `Ready to merge? Use:\n` +
-      `/merge ${prNumber}`
-    );
-  } catch (error) {
-    log(`/approve error: ${error.message}`, 'error');
-    await sendMessage(`❌ Approve failed: ${error.message}`);
+    sh(`gh pr review ${pr} --approve -b "Approved via Telegram bot"`, { timeout: 15000 });
+    addEvent('approve', null, `✅ PR #${pr} approved`);
+    send(`✅ PR #${pr} approved!`);
+  } catch (e) {
+    send(`❌ Failed to approve PR #${pr}: ${e.message}`);
   }
 });
 
-// /merge <pr-number> command
-bot.onText(/^\/merge\s+(\d+)$/, async (msg, match) => {
+// ── /merge <number> ─────────────────────────────────────────────────────────
+
+bot.onText(/^\/merge (\d+)$/, async (msg, match) => {
+  if (!auth(msg)) return;
+  const pr = match[1];
+
   try {
-    const prNumber = match[1];
-
-    log(`Merging PR #${prNumber}`, 'info');
-
-    try {
-      execSync(`gh pr merge ${prNumber} --squash --auto`, {
-        cwd: projectDir,
-        stdio: 'pipe'
-      });
-    } catch (e) {
-      log(`gh pr merge attempted: ${e.message}`, 'warn');
-    }
-
-    await sendMessage(
-      `🔀 *PR #${prNumber} merged to main*\n\n` +
-      `Changes integrated. Running post-merge checks...`
-    );
-
-    // Simulate post-merge notification
-    setTimeout(async () => {
-      await sendMessage(
-        `✅ *Post-merge checks passed*\n` +
-        `All tests: PASSING\n` +
-        `Ready for deployment.`
-      );
-    }, 5000);
-
-  } catch (error) {
-    log(`/merge error: ${error.message}`, 'error');
-    await sendMessage(`❌ Merge failed: ${error.message}`);
+    sh(`gh pr merge ${pr} --squash --delete-branch`, { timeout: 30000 });
+    state.metrics.prsMerged++;
+    addEvent('merge', null, `🔀 PR #${pr} merged`);
+    saveState();
+    send(`🔀 PR #${pr} merged and branch deleted!`);
+  } catch (e) {
+    send(`❌ Failed to merge PR #${pr}: ${e.message}`);
   }
 });
 
-// /metrics command
-bot.onText(/^\/metrics$/, async (msg) => {
+// ── /diff <number> ──────────────────────────────────────────────────────────
+
+bot.onText(/^\/diff (\d+)$/, async (msg, match) => {
+  if (!auth(msg)) return;
+  const pr = match[1];
+
   try {
-    let metricsText = `*📈 Build Metrics — Week of March 24, 2026*\n━━━━━━━━━━━━━━━━━\n`;
-
-    // Try to get git metrics
-    try {
-      const mergedCount = execSync(
-        `cd ${projectDir} && git log --oneline --all --grep="Merge pull request" --since="7 days ago" | wc -l`,
-        { encoding: 'utf8' }
-      ).trim();
-
-      const additions = execSync(
-        `cd ${projectDir} && git log --all --numstat --since="7 days ago" | grep -E "^[0-9]" | awk '{sum+=$1} END {print sum}'`,
-        { encoding: 'utf8' }
-      ).trim() || '0';
-
-      metricsText += `📝 *PRs Merged:* ${mergedCount}\n`;
-      metricsText += `➕ *Lines Added:* ${additions}\n`;
-    } catch (e) {
-      metricsText += `📝 *PRs Merged:* 12\n`;
-      metricsText += `➕ *Lines Added:* 3847\n`;
-    }
-
-    metricsText += `\n*Test Results*\n`;
-    metricsText += `✅ *Pass Rate:* 87/87 (100%)\n`;
-    metricsText += `⏱️ *Avg Build Time:* 4.2 minutes\n`;
-    metricsText += `\n*Project Progress*\n`;
-    metricsText += `📋 *Layer 2 Completion:* 58% (11 of 19 features)\n`;
-    metricsText += `🎯 *On Track:* Yes ✓\n`;
-    metricsText += `📅 *Days Remaining:* 16 of 28\n`;
-
-    await sendMessage(metricsText);
-  } catch (error) {
-    log(`/metrics error: ${error.message}`, 'error');
-    await sendMessage(`❌ Error getting metrics: ${error.message}`);
+    const diff = sh(`gh pr diff ${pr} --stat`, { timeout: 15000 });
+    const truncated = diff.length > 3500 ? diff.slice(0, 3500) + '\n...' : diff;
+    send(`📝 *PR #${pr} Diff*\n\`\`\`\n${truncated}\n\`\`\``);
+  } catch (e) {
+    send(`❌ Failed to get diff: ${e.message}`);
   }
 });
 
-// /report command
-bot.onText(/^\/report$/, async (msg) => {
+// ── /metrics ────────────────────────────────────────────────────────────────
+
+bot.onText(/^\/metrics$/, (msg) => {
+  if (!auth(msg)) return;
+
+  let text = `📈 *Build Metrics*\n\n`;
+  text += `Agent runs: *${state.metrics.agentRuns}*\n`;
+  text += `PRs created: *${state.metrics.prsCreated}*\n`;
+  text += `PRs merged: *${state.metrics.prsMerged}*\n`;
+
+  // Git stats
   try {
-    const reportText = `*📊 Weekly Report — View1 Studio*
-━━━━━━━━━━━━━━━━━
+    const commits = sh('git log --oneline --since="7 days ago" | wc -l').trim();
+    const lines = sh('git diff --stat HEAD~20 2>/dev/null | tail -1').trim();
+    text += `Commits (7d): *${commits}*\n`;
+    text += `Recent changes: ${lines}\n`;
+  } catch {}
 
-*🏗️ Engineering*
-✅ 12 PRs merged
-📝 3,847 lines of code added
-🔧 Features complete:
-  • Authentication system
-  • UI/Design system
-  • REST API
-  • AI pipeline
-  • File upload
-📌 In progress:
-  • Client gallery (2 days)
-  • Stripe integration (1 day)
-✨ Tests: 87/87 passing (100%)
+  // Disk & system
+  try {
+    const disk = sh('df -h / | tail -1 | awk \'{print $4}\'');
+    text += `\nDisk free: *${disk}*\n`;
+  } catch {}
 
-*📱 Marketing*
-📧 14 social media posts
-📰 2 blog posts written
-🖼️ Landing page: 60% complete
-📈 Waitlist signups: 23 new
-
-*💰 Resources*
-💵 Budget spent: \$180 (API costs)
-⏱️ Hours invested: 168 agent-hours
-🔥 Capacity: 88% utilized
-
-*📈 Metrics*
-🎯 On track for Day 28 launch
-📊 Velocity: 2.1 features/day
-🏁 Layer 2 complete: 58%
-
-*🎯 Next Week Priorities*
-1. Finalize Stripe payment system
-2. Complete gallery themes
-3. Launch landing page
-4. Begin Product Hunt prep
-5. Security audit completion
-
-Questions? /metrics for detailed stats`;
-
-    await sendMessage(reportText);
-  } catch (error) {
-    log(`/report error: ${error.message}`, 'error');
-    await sendMessage(`❌ Error generating report: ${error.message}`);
-  }
+  send(text);
 });
 
-// /notify command
-bot.onText(/^\/notify$/, async (msg) => {
-  await sendMessage(
-    `*🔔 Notification Settings*\n\n` +
-    `Current: Notifications ON\n\n` +
-    `You receive alerts for:\n` +
-    `✅ Agent task completion\n` +
-    `❌ Agent failures\n` +
-    `📋 PR ready for review\n` +
-    `📊 Daily 8 AM briefing\n` +
-    `📈 Weekly Friday report\n\n` +
-    `To disable all notifications, contact bot admin.`
+// ── /events ─────────────────────────────────────────────────────────────────
+
+bot.onText(/^\/events$/, (msg) => {
+  if (!auth(msg)) return;
+
+  const recent = state.events.slice(0, 20);
+  if (recent.length === 0) {
+    send(`📜 No events recorded yet.`);
+    return;
+  }
+
+  let text = `📜 *Recent Events*\n\n`;
+  recent.forEach(e => {
+    const time = new Date(e.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    text += `\`${time}\` ${e.message}\n`;
+  });
+
+  send(text);
+});
+
+// ── /health ─────────────────────────────────────────────────────────────────
+
+bot.onText(/^\/health$/, (msg) => {
+  if (!auth(msg)) return;
+
+  const uptime = sh('uptime');
+  const memory = sh('vm_stat | head -5');
+  const disk = sh('df -h / | tail -1');
+  const nodeVer = sh('node -v');
+  const sessions = tmuxSessions();
+
+  send(`🖥️ *Mac Mini Health*
+
+Uptime: \`${uptime}\`
+Node: \`${nodeVer}\`
+Disk: \`${disk}\`
+tmux sessions: *${sessions.length}*
+Bot uptime: since ${state.startedAt}`);
+});
+
+// ── /sessions ───────────────────────────────────────────────────────────────
+
+bot.onText(/^\/sessions$/, (msg) => {
+  if (!auth(msg)) return;
+  const sessions = tmuxSessions();
+  if (sessions.length === 0) {
+    send(`⚪ No active tmux sessions.`);
+    return;
+  }
+  send(`🖥️ *Active Sessions (${sessions.length})*\n\n\`\`\`\n${sessions.join('\n')}\n\`\`\``);
+});
+
+// ── /report ─────────────────────────────────────────────────────────────────
+
+bot.onText(/^\/report$/, (msg) => {
+  if (!auth(msg)) return;
+  generateWeeklyReport();
+});
+
+async function generateWeeklyReport() {
+  let text = `📊 *Weekly Report — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}*\n`;
+  text += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+  // Engineering
+  text += `🔧 *Engineering*\n`;
+  text += `Agent runs: ${state.metrics.agentRuns}\n`;
+  text += `PRs merged: ${state.metrics.prsMerged}\n`;
+  try {
+    const commits = sh('git log --oneline --since="7 days ago" | wc -l').trim();
+    const authors = sh('git log --format="%an" --since="7 days ago" | sort -u | wc -l').trim();
+    text += `Commits: ${commits}\n`;
+  } catch {}
+
+  // Tests
+  try {
+    const testResult = sh('cd apps/photo-sorter && npm test 2>&1 | tail -3', { timeout: 60000 });
+    text += `\n🧪 *Tests*\n\`${testResult}\`\n`;
+  } catch {
+    text += `\n🧪 *Tests*: not configured yet\n`;
+  }
+
+  // Events summary
+  const weekEvents = state.events.filter(e =>
+    new Date(e.time) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   );
+  text += `\n📜 *Events this week:* ${weekEvents.length}\n`;
+
+  // Open PRs
+  const prs = getOpenPRs();
+  text += `\n📋 *Open PRs:* ${prs.length}\n`;
+  prs.forEach(pr => {
+    text += `  #${pr.number} ${pr.title}\n`;
+  });
+
+  text += `\n_Report generated ${new Date().toLocaleString()}_`;
+
+  send(text);
+
+  // Also save to file
+  const reportFile = path.join(RESULTS_DIR, `weekly-report-${new Date().toISOString().split('T')[0]}.md`);
+  fs.writeFileSync(reportFile, text.replace(/\*/g, '').replace(/_/g, ''));
+  log('Weekly report generated');
+}
+
+// ── /delegate <agent-id> <prompt> ──────────────────────────────────────────
+
+bot.onText(/^\/delegate (\S+)\s+(.+)$/s, async (msg, match) => {
+  if (!auth(msg)) return;
+
+  const agentId = match[1].trim().toLowerCase();
+  const prompt = match[2].trim();
+
+  if (!AGENTS[agentId]) {
+    send(`❌ Unknown agent: \`${agentId}\`\nUse /agents to see the roster.`);
+    return;
+  }
+
+  const taskId = `task-${Date.now()}`;
+  const task = { id: taskId, agentId, prompt, priority: 1, createdAt: new Date().toISOString(), status: 'queued' };
+
+  if (!state.taskQueue) state.taskQueue = [];
+  state.taskQueue.push(task);
+  saveState();
+
+  // If agent is idle, launch immediately
+  if (!isAgentRunning(agentId)) {
+    await launchAgentWithPrompt(agentId, prompt, taskId);
+    send(`🚀 Delegated to \`${agentId}\`: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`);
+  } else {
+    const position = state.taskQueue.filter(t => t.agentId === agentId && t.status === 'queued').length;
+    send(`📋 Queued for \`${agentId}\` (position #${position}): ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`);
+  }
+
+  addEvent('delegate', agentId, `📋 Task delegated to ${AGENTS[agentId].icon} \`${agentId}\``);
 });
 
-// Handle callback queries (button presses)
+// ── /chain <agent1> -> <agent2> <prompt> ──────────────────────────────────
+
+bot.onText(/^\/chain (\S+)\s*->\s*(\S+)\s+(.+)$/s, async (msg, match) => {
+  if (!auth(msg)) return;
+
+  const fromAgent = match[1].trim().toLowerCase();
+  const toAgent = match[2].trim().toLowerCase();
+  const taskPrompt = match[3].trim();
+
+  if (!AGENTS[fromAgent]) { send(`❌ Unknown agent: \`${fromAgent}\``); return; }
+  if (!AGENTS[toAgent]) { send(`❌ Unknown agent: \`${toAgent}\``); return; }
+
+  if (!state.delegationRules) state.delegationRules = [];
+  state.delegationRules.push({
+    id: `rule-${Date.now()}`,
+    fromAgent,
+    toAgent,
+    trigger: 'on_complete',
+    taskPrompt,
+    createdAt: new Date().toISOString(),
+    active: true,
+  });
+  saveState();
+
+  send(`🔗 Chain created: when \`${fromAgent}\` completes → auto-launch \`${toAgent}\`\nTask: ${taskPrompt.substring(0, 120)}${taskPrompt.length > 120 ? '...' : ''}`);
+  addEvent('chain', fromAgent, `🔗 Chain: ${AGENTS[fromAgent].icon} \`${fromAgent}\` → ${AGENTS[toAgent].icon} \`${toAgent}\``);
+});
+
+// ── /queue — show pending tasks ───────────────────────────────────────────
+
+bot.onText(/^\/queue$/, (msg) => {
+  if (!auth(msg)) return;
+
+  const queued = (state.taskQueue || []).filter(t => t.status === 'queued');
+  const rules = (state.delegationRules || []).filter(r => r.active);
+
+  if (queued.length === 0 && rules.length === 0) {
+    send(`📋 No queued tasks or active chains.`);
+    return;
+  }
+
+  let text = `📋 *Task Queue & Chains*\n\n`;
+
+  if (queued.length > 0) {
+    text += `*Queued Tasks (${queued.length}):*\n`;
+    queued.forEach((t, i) => {
+      text += `${i + 1}. ${AGENTS[t.agentId]?.icon || '🤖'} \`${t.agentId}\` — ${t.prompt.substring(0, 60)}${t.prompt.length > 60 ? '...' : ''}\n`;
+    });
+    text += '\n';
+  }
+
+  if (rules.length > 0) {
+    text += `*Active Chains (${rules.length}):*\n`;
+    rules.forEach(r => {
+      text += `🔗 \`${r.fromAgent}\` → \`${r.toAgent}\`: ${r.taskPrompt.substring(0, 60)}${r.taskPrompt.length > 60 ? '...' : ''}\n`;
+    });
+  }
+
+  send(text);
+});
+
+// ── /clearqueue — remove all queued tasks and chains ──────────────────────
+
+bot.onText(/^\/clearqueue$/, (msg) => {
+  if (!auth(msg)) return;
+  const queuedCount = (state.taskQueue || []).filter(t => t.status === 'queued').length;
+  const rulesCount = (state.delegationRules || []).filter(r => r.active).length;
+  state.taskQueue = (state.taskQueue || []).filter(t => t.status !== 'queued');
+  (state.delegationRules || []).forEach(r => { r.active = false; });
+  saveState();
+  send(`🗑️ Cleared ${queuedCount} queued tasks and ${rulesCount} chains.`);
+});
+
+// ── Autonomous delegation helpers ─────────────────────────────────────────
+
+async function launchAgentWithPrompt(agentId, prompt, taskId) {
+  try {
+    sh(`tmux kill-session -t ${agentId} 2>/dev/null || true`);
+    sh(`tmux new-session -d -s ${agentId} -c "${PROJECT_DIR}"`);
+
+    const escapedPrompt = prompt.replace(/'/g, "'\\''").substring(0, 8000);
+    const launchCmd = `claude --worktree -p '${escapedPrompt}' --allowedTools "Read,Write,Edit,Bash,Glob,Grep"`;
+    sh(`tmux send-keys -t ${agentId} '${launchCmd}' Enter`);
+
+    state.agents[agentId] = {
+      status: 'running',
+      startTime: new Date().toISOString(),
+      task: prompt.substring(0, 200),
+      taskId,
+    };
+    state.metrics.agentRuns++;
+
+    // Mark task as running
+    if (taskId) {
+      const task = (state.taskQueue || []).find(t => t.id === taskId);
+      if (task) task.status = 'running';
+    }
+
+    saveState();
+    addEvent('launch', agentId, `${AGENTS[agentId].icon} \`${agentId}\` auto-launched`);
+    return true;
+  } catch (e) {
+    log(`Failed to auto-launch ${agentId}: ${e.message}`, 'error');
+    return false;
+  }
+}
+
+function processAgentCompletion(agentId) {
+  // Mark current task as done
+  const agentState = state.agents[agentId];
+  if (agentState?.taskId) {
+    const task = (state.taskQueue || []).find(t => t.id === agentState.taskId);
+    if (task) task.status = 'done';
+  }
+
+  // Check delegation chains: auto-launch chained agent
+  const rules = (state.delegationRules || []).filter(r => r.active && r.fromAgent === agentId);
+  rules.forEach(async (rule) => {
+    const taskId = `task-${Date.now()}`;
+    const task = {
+      id: taskId, agentId: rule.toAgent, prompt: rule.taskPrompt,
+      priority: 1, createdAt: new Date().toISOString(), status: 'queued',
+    };
+    state.taskQueue.push(task);
+
+    if (!isAgentRunning(rule.toAgent)) {
+      const launched = await launchAgentWithPrompt(rule.toAgent, rule.taskPrompt, taskId);
+      if (launched) {
+        send(`🔗 *Chain triggered:* \`${agentId}\` completed → auto-launching ${AGENTS[rule.toAgent].icon} \`${rule.toAgent}\`\nTask: ${rule.taskPrompt.substring(0, 100)}${rule.taskPrompt.length > 100 ? '...' : ''}`);
+      }
+    }
+    // One-shot: deactivate rule after firing
+    rule.active = false;
+    saveState();
+  });
+
+  // Check task queue: auto-launch next queued task for this agent
+  const nextTask = (state.taskQueue || []).find(t => t.agentId === agentId && t.status === 'queued');
+  if (nextTask && !rules.length) {
+    setTimeout(async () => {
+      if (!isAgentRunning(agentId)) {
+        const launched = await launchAgentWithPrompt(agentId, nextTask.prompt, nextTask.id);
+        if (launched) {
+          send(`📋 *Auto-delegated:* next queued task for ${AGENTS[agentId].icon} \`${agentId}\`\nTask: ${nextTask.prompt.substring(0, 100)}${nextTask.prompt.length > 100 ? '...' : ''}`);
+        }
+      }
+    }, 5000); // Brief delay to let tmux session clean up
+  }
+}
+
+// ── Inline keyboard callback handler ────────────────────────────────────────
+
 bot.on('callback_query', async (query) => {
   const data = query.data;
-  const action = data.split('_')[0];
 
-  log(`Callback query: ${data}`, 'info');
-
-  try {
-    if (action === 'approve') {
-      const prNumber = data.split('_')[1];
-      execSync(`gh pr review ${prNumber} --approve`, {
-        cwd: projectDir,
-        stdio: 'pipe'
-      });
-      await bot.answerCallbackQuery(query.id, '✅ PR approved!', true);
-    } else if (action === 'merge') {
-      const prNumber = data.split('_')[1];
-      execSync(`gh pr merge ${prNumber} --squash`, {
-        cwd: projectDir,
-        stdio: 'pipe'
-      });
-      await bot.answerCallbackQuery(query.id, '🔀 PR merged!', true);
-    }
-  } catch (error) {
-    log(`Callback error: ${error.message}`, 'error');
-    await bot.answerCallbackQuery(query.id, `❌ Error: ${error.message}`, true);
-  }
-});
-
-// ============================================================================
-// CLAUDE AI ASSISTANT
-// ============================================================================
-
-const SYSTEM_PROMPT = `You are the View1 Studio Build Manager assistant, talking to Kyle via Telegram.
-
-You help with:
-- Discussing project plans, priorities, and progress
-- Brainstorming features, architecture, and strategy
-- Reviewing what agents are working on and what's next
-- Answering questions about the View1 Studio platform build
-- General development advice and problem-solving
-
-Context:
-- View1 Studio is an AI-powered photography platform being built with a 28-day sprint
-- There are 22 AI agents across 6 departments: Engineering, Marketing, Content, Design, QA, DevOps
-- Tech stack: Next.js, Node/Express, PostgreSQL, Stripe, Vercel
-- Kyle is the founder and lead — keep responses concise and actionable
-- Use Telegram-friendly formatting (short paragraphs, bullet points)
-
-Keep responses brief and direct. No fluff. Kyle is busy building.`;
-
-// Conversation history per chat (in-memory, resets on bot restart)
-const conversations = {};
-const MAX_HISTORY = 20; // Keep last 20 message pairs
-
-async function chatWithClaude(userMessage, chatId) {
-  if (!conversations[chatId]) {
-    conversations[chatId] = [];
-  }
-
-  const history = conversations[chatId];
-  history.push({ role: 'user', content: userMessage });
-
-  // Trim history if too long
-  while (history.length > MAX_HISTORY * 2) {
-    history.shift();
-  }
-
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: history
-    });
-
-    const reply = response.content[0].text;
-    history.push({ role: 'assistant', content: reply });
-
-    return reply;
-  } catch (error) {
-    log(`Claude API error: ${error.message}`, 'error');
-    // Remove the failed user message from history
-    history.pop();
-    throw error;
-  }
-}
-
-// /clear command — reset conversation
-bot.onText(/^\/clear$/, async (msg) => {
-  conversations[msg.chat.id] = [];
-  await sendMessage('🧹 Conversation cleared. Fresh start.');
-});
-
-// Catch-all: route non-command messages to Claude
-bot.on('message', async (msg) => {
-  // Skip commands (handled above) and non-text messages
-  if (!msg.text || msg.text.startsWith('/')) return;
-  // Only respond to the authorized chat
-  if (msg.chat.id !== chatId) return;
-
-  try {
-    await bot.sendChatAction(chatId, 'typing');
-    const reply = await chatWithClaude(msg.text, msg.chat.id);
-
-    // Split long messages (Telegram limit is 4096 chars)
-    if (reply.length > 4000) {
-      const chunks = reply.match(/[\s\S]{1,4000}/g);
-      for (const chunk of chunks) {
-        await sendMessage(chunk);
-      }
-    } else {
-      await sendMessage(reply);
-    }
-  } catch (error) {
-    log(`Chat error: ${error.message}`, 'error');
-    await sendMessage(`⚠️ Couldn't reach Claude. Try again in a moment.`);
-  }
-});
-
-// ============================================================================
-// SCHEDULED NOTIFICATIONS
-// ============================================================================
-
-// Daily morning briefing at 8 AM
-cron.schedule('0 8 * * *', async () => {
-  log('Sending morning briefing', 'info');
-
-  try {
-    let briefing = `🌅 *Morning Briefing — ${new Date().toLocaleDateString()}*\n━━━━━━━━━━━━━━━━━\n`;
-    briefing += `\n🟢 *Overnight Activity*\n`;
-
+  if (data.startsWith('approve_')) {
+    const pr = data.split('_')[1];
     try {
-      const commits = execSync(
-        `cd ${projectDir} && git log --oneline --since="8 hours ago" | wc -l`,
-        { encoding: 'utf8' }
-      ).trim();
-      briefing += `• ${commits} commits merged\n`;
+      sh(`gh pr review ${pr} --approve -b "Approved via Telegram"`, { timeout: 15000 });
+      state.metrics.prsCreated++; // track approvals
+      addEvent('approve', null, `✅ PR #${pr} approved`);
+      bot.answerCallbackQuery(query.id, { text: `PR #${pr} approved!` });
+      bot.editMessageText(
+        query.message.text + `\n\n✅ *PR #${pr} approved*`,
+        { chat_id: CHAT_ID, message_id: query.message.message_id, parse_mode: 'Markdown' }
+      );
     } catch (e) {
-      briefing += `• Agents completed overnight tasks\n`;
+      bot.answerCallbackQuery(query.id, { text: `Failed: ${e.message}` });
     }
+  }
 
-    briefing += `• All tests passing ✅\n`;
-    briefing += `\n📌 *Awaiting Your Review*\n`;
-    briefing += `Use /status to check for pending PRs\n`;
-    briefing += `\n📋 *Quick Actions*\n`;
-    briefing += `[/agents] [/status] [/metrics]`;
-
-    await sendMessage(briefing);
-  } catch (error) {
-    log(`Morning briefing error: ${error.message}`, 'error');
+  if (data.startsWith('merge_')) {
+    const pr = data.split('_')[1];
+    try {
+      sh(`gh pr merge ${pr} --squash --delete-branch`, { timeout: 30000 });
+      state.metrics.prsMerged++;
+      addEvent('merge', null, `🔀 PR #${pr} merged`);
+      saveState();
+      bot.answerCallbackQuery(query.id, { text: `PR #${pr} merged!` });
+      bot.editMessageText(
+        query.message.text + `\n\n🔀 *PR #${pr} merged*`,
+        { chat_id: CHAT_ID, message_id: query.message.message_id, parse_mode: 'Markdown' }
+      );
+    } catch (e) {
+      bot.answerCallbackQuery(query.id, { text: `Failed: ${e.message}` });
+    }
   }
 });
 
-// Weekly report Friday at 5 PM
-cron.schedule('0 17 * * 5', async () => {
-  log('Sending weekly report', 'info');
+// ============================================================================
+// SCHEDULED TASKS (CRON)
+// ============================================================================
+
+// Morning briefing — 8:00 AM daily
+cron.schedule('0 8 * * *', () => {
+  log('Sending morning briefing');
+
+  let text = `🌅 *Morning Briefing — ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}*\n\n`;
+
+  // Overnight events
+  const overnight = state.events.filter(e => {
+    const t = new Date(e.time);
+    const now = new Date();
+    return (now - t) < 12 * 60 * 60 * 1000; // last 12 hours
+  });
+
+  if (overnight.length > 0) {
+    text += `*Overnight Activity:*\n`;
+    overnight.forEach(e => text += `• ${e.message}\n`);
+    text += '\n';
+  } else {
+    text += `_No overnight activity._\n\n`;
+  }
+
+  // Open PRs
+  const prs = getOpenPRs();
+  if (prs.length > 0) {
+    text += `*Awaiting Review (${prs.length}):*\n`;
+    prs.forEach(pr => text += `• #${pr.number} ${pr.title}\n`);
+    text += '\n';
+  }
+
+  // Running agents
+  const running = Object.keys(AGENTS).filter(id => isAgentRunning(id));
+  if (running.length > 0) {
+    text += `*Currently Running:*\n`;
+    running.forEach(id => text += `• ${AGENTS[id].icon} \`${id}\`\n`);
+  } else {
+    text += `⚪ No agents running. Use /launch to start today's work.\n`;
+  }
+
+  send(text);
+});
+
+// Weekly report — Friday 5:00 PM
+cron.schedule('0 17 * * 5', () => {
+  log('Generating weekly report');
+  generateWeeklyReport();
+});
+
+// Agent health check — every 30 minutes
+cron.schedule('*/30 * * * *', () => {
+  Object.keys(AGENTS).forEach(id => {
+    const agentState = state.agents[id];
+    if (agentState?.status === 'running' && !isAgentRunning(id)) {
+      // Agent was running but tmux session ended — it finished or crashed
+      const elapsed = agentState.startTime
+        ? Math.round((Date.now() - new Date(agentState.startTime).getTime()) / 60000)
+        : 0;
+
+      state.agents[id].status = 'completed';
+      state.metrics.totalMinutes += elapsed;
+
+      // Check if a PR was created
+      const prs = getOpenPRs();
+      const agentPR = prs.find(pr => pr.headBranch.includes(id));
+
+      if (agentPR) {
+        state.metrics.prsCreated++;
+        addEvent('complete', id, `✅ ${AGENTS[id].icon} \`${id}\` done (${elapsed}min) — PR #${agentPR.number}`);
+
+        send(`✅ *${AGENTS[id].icon} ${id} completed* in ${elapsed}min\n\nPR #${agentPR.number}: ${agentPR.title}\n+${agentPR.additions} / -${agentPR.deletions}`, {
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '✅ Approve', callback_data: `approve_${agentPR.number}` },
+              { text: '🔀 Merge', callback_data: `merge_${agentPR.number}` }
+            ]]
+          }
+        });
+      } else {
+        addEvent('complete', id, `⚪ ${AGENTS[id].icon} \`${id}\` finished (${elapsed}min) — no PR created`);
+        send(`⚪ ${AGENTS[id].icon} \`${id}\` finished (${elapsed}min) but no PR was created. Check /logs ${id}`);
+      }
+
+      saveState();
+
+      // Trigger autonomous delegation (queue + chains)
+      processAgentCompletion(id);
+    }
+  });
+});
+
+// ============================================================================
+// EXPRESS API (for Vercel Dashboard)
+// ============================================================================
+
+const app = express();
+app.use(express.json());
+
+// CORS for dashboard
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+
+// Dashboard data endpoint
+app.get('/api/status', (req, res) => {
+  const agentList = Object.entries(AGENTS).map(([id, info]) => ({
+    id,
+    ...info,
+    running: isAgentRunning(id),
+    state: state.agents[id] || { status: 'idle' }
+  }));
+
+  res.json({
+    agents: agentList,
+    events: state.events.slice(0, 50),
+    metrics: state.metrics,
+    prs: getOpenPRs(),
+    startedAt: state.startedAt
+  });
+});
+
+// Agent action endpoint (from dashboard)
+app.post('/api/action', (req, res) => {
+  const { action, agentId, prNumber } = req.body;
 
   try {
-    // Use /report command logic
-    const reportText = `*📊 Weekly Report — View1 Studio*
-━━━━━━━━━━━━━━━━━
-
-*🏗️ Engineering*
-✅ 12 PRs merged
-📝 3,847 lines of code added
-
-*📱 Marketing*
-📧 14 social media posts
-🖼️ Landing page: 60% complete
-
-*📈 Metrics*
-🎯 On track for Day 28 launch
-📊 Velocity: 2.1 features/day
-
-Use /report for full details`;
-
-    await sendMessage(reportText);
-  } catch (error) {
-    log(`Weekly report error: ${error.message}`, 'error');
+    if (action === 'launch' && agentId) {
+      sh(`tmux new-session -d -s ${agentId} -c "${PROJECT_DIR}" 2>/dev/null || true`);
+      sh(`tmux send-keys -t ${agentId} 'claude' Enter`);
+      state.agents[agentId] = { status: 'running', startTime: new Date().toISOString() };
+      state.metrics.agentRuns++;
+      addEvent('launch', agentId, `${AGENTS[agentId]?.icon || '🤖'} \`${agentId}\` launched from dashboard`);
+      saveState();
+      res.json({ ok: true, message: `${agentId} launched` });
+    } else if (action === 'stop' && agentId) {
+      sh(`tmux kill-session -t ${agentId} 2>/dev/null`);
+      addEvent('stop', agentId, `⏹️ \`${agentId}\` stopped from dashboard`);
+      saveState();
+      res.json({ ok: true, message: `${agentId} stopped` });
+    } else if (action === 'approve' && prNumber) {
+      sh(`gh pr review ${prNumber} --approve`, { timeout: 15000 });
+      addEvent('approve', null, `✅ PR #${prNumber} approved from dashboard`);
+      res.json({ ok: true });
+    } else if (action === 'merge' && prNumber) {
+      sh(`gh pr merge ${prNumber} --squash --delete-branch`, { timeout: 30000 });
+      state.metrics.prsMerged++;
+      addEvent('merge', null, `🔀 PR #${prNumber} merged from dashboard`);
+      saveState();
+      res.json({ ok: true });
+    } else {
+      res.status(400).json({ error: 'Unknown action' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
-// ============================================================================
-// ERROR HANDLING & STARTUP
-// ============================================================================
+// Delegation endpoint (from dashboard)
+app.post('/api/delegate', async (req, res) => {
+  const { agentId, prompt } = req.body;
 
-bot.on('error', (error) => {
-  log(`Bot error: ${error.message}`, 'error');
+  if (!agentId || !prompt) {
+    return res.status(400).json({ error: 'agentId and prompt required' });
+  }
+  if (!AGENTS[agentId]) {
+    return res.status(400).json({ error: `Unknown agent: ${agentId}` });
+  }
+
+  const taskId = `task-${Date.now()}`;
+  const task = { id: taskId, agentId, prompt, priority: 1, createdAt: new Date().toISOString(), status: 'queued' };
+
+  if (!state.taskQueue) state.taskQueue = [];
+  state.taskQueue.push(task);
+
+  if (!isAgentRunning(agentId)) {
+    await launchAgentWithPrompt(agentId, prompt, taskId);
+    res.json({ ok: true, taskId, message: `${agentId} launched with task` });
+  } else {
+    saveState();
+    res.json({ ok: true, taskId, message: `Task queued for ${agentId}` });
+  }
 });
 
-bot.on('polling_error', (error) => {
-  log(`Polling error: ${error.message}`, 'error');
+// Task queue endpoint
+app.get('/api/queue', (req, res) => {
+  res.json({
+    queue: (state.taskQueue || []).filter(t => t.status === 'queued'),
+    chains: (state.delegationRules || []).filter(r => r.active),
+  });
 });
 
-// Startup message
-log('Telegram bot started successfully', 'info');
-log(`Listening for messages from chat ID: ${chatId}`, 'info');
-
-sendMessage(
-  `✅ *Telegram Bot Online*\n\n` +
-  `View1 Build Manager is ready.\n` +
-  `Type /help for available commands.`
-).catch(err => log(`Startup message failed: ${err.message}`, 'warn'));
-
-// ============================================================================
-// GRACEFUL SHUTDOWN
-// ============================================================================
-
-process.on('SIGINT', () => {
-  log('Shutting down gracefully...', 'info');
-  bot.stopPolling();
-  process.exit(0);
+// Events stream endpoint
+app.get('/api/events', (req, res) => {
+  res.json(state.events.slice(0, parseInt(req.query.limit) || 50));
 });
 
-process.on('SIGTERM', () => {
-  log('Shutting down gracefully...', 'info');
-  bot.stopPolling();
-  process.exit(0);
+app.listen(API_PORT, '0.0.0.0', () => {
+  log(`Dashboard API running on http://0.0.0.0:${API_PORT}`);
 });
 
 // ============================================================================
-// AGENT NOTIFICATION SYSTEM
-// These functions are called by notify.sh to send Telegram messages
+// STARTUP
 // ============================================================================
 
-// Export function for external notification calls
-module.exports = {
-  sendMessage,
-  logMessage: log
-};
+loadState();
+log('View1 Build Manager bot started');
+log(`Monitoring ${Object.keys(AGENTS).length} agents`);
+log(`Dashboard API on port ${API_PORT}`);
+
+send(`🤖 *View1 Build Manager online*
+${Object.keys(AGENTS).length} agents registered
+Dashboard API on port ${API_PORT}
+Type /help for commands`);
