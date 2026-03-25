@@ -1,0 +1,22 @@
+{
+  "name": "view1-studio",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:coverage": "turbo test:coverage"
+  },
+  "packageManager": "npm@11.11.1",
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
