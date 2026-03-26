@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      STYLES
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <style>
-/* ── CSS Variables ────────────────────────────────────────────────── */
+/* -- CSS Variables --------------------------------------------------- */
 :root {
   --bg: #09090B;
   --surface-1: #18181B;
@@ -20,8 +20,10 @@
   --surface-3: #3F3F46;
   --border: #27272A;
   --border-subtle: #1e1e22;
-  --accent: #8B5CF6;
-  --accent-dim: rgba(139,92,246,0.15);
+  --accent: #4ADE80;
+  --accent-dim: rgba(74, 222, 128, 0.15);
+  --cyan: #06B6D4;
+  --cyan-dim: rgba(6, 182, 212, 0.15);
   --text-primary: #FAFAFA;
   --text-secondary: #A1A1AA;
   --text-muted: #71717A;
@@ -50,9 +52,9 @@
   --text-muted: #A1A1AA;
 }
 
-/* ── Reset & Base ─────────────────────────────────────────────────── */
+/* -- Reset & Base ---------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 14px; }
+html { font-size: 13px; }
 body {
   font-family: var(--font);
   background: var(--bg);
@@ -79,10 +81,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
 
-/* ── Layout ───────────────────────────────────────────────────────── */
+/* -- Layout ---------------------------------------------------------- */
 .app { display: flex; height: 100vh; }
 
-/* ── Sidebar ──────────────────────────────────────────────────────── */
+/* -- Sidebar --------------------------------------------------------- */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--surface-1);
@@ -175,7 +177,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   color: var(--text-muted);
 }
 
-/* ── Main Content ─────────────────────────────────────────────────── */
+/* -- Main Content ---------------------------------------------------- */
 .main {
   flex: 1;
   display: flex;
@@ -192,7 +194,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   background: var(--surface-1);
   min-height: 49px;
 }
-.topbar-title { font-size: 15px; font-weight: 600; }
+.topbar-title { font-size: 16px; font-weight: 600; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 .topbar-badge {
   font-size: 11px;
@@ -219,16 +221,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   padding: 24px;
 }
 
-/* ── Page container ───────────────────────────────────────────────── */
+/* -- Page container -------------------------------------------------- */
 .page { display: none; }
 .page.active { display: block; }
 
-/* ── Cards ────────────────────────────────────────────────────────── */
+/* -- Cards ----------------------------------------------------------- */
 .card {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 20px;
   transition: border-color 150ms;
 }
 .card:hover { border-color: var(--surface-3); }
@@ -244,11 +246,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   color: var(--text-secondary);
 }
 
-/* ── Stats Row ────────────────────────────────────────────────────── */
+/* -- Stats ----------------------------------------------------------- */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 20px;
 }
 .stat-card {
@@ -257,10 +259,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   border-radius: var(--radius);
   padding: 16px;
 }
-.stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+.stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
 .stat-value { font-size: 28px; font-weight: 700; line-height: 1.2; }
 
-/* ── Buttons ──────────────────────────────────────────────────────── */
+/* -- Buttons --------------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -271,7 +273,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   font-weight: 500;
   transition: background 150ms, opacity 150ms;
 }
-.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); color: #000; }
 .btn-primary:hover { opacity: 0.9; }
 .btn-secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--surface-3); }
@@ -280,8 +282,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text-primary); }
 .btn-danger { background: #7F1D1D; color: #FCA5A5; }
 .btn-danger:hover { background: #991B1B; }
+.btn-cyan { background: var(--cyan); color: #000; }
+.btn-cyan:hover { opacity: 0.9; }
 
-/* ── Badges ───────────────────────────────────────────────────────── */
+/* -- Badges ---------------------------------------------------------- */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -300,7 +304,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .badge-failed { background: rgba(239,68,68,0.15); color: #FCA5A5; }
 .badge-idle { background: rgba(113,113,122,0.15); color: #A1A1AA; }
 
-/* ── Status Dot ───────────────────────────────────────────────────── */
+/* -- Status Dot ------------------------------------------------------ */
 .status-dot {
   width: 8px; height: 8px;
   border-radius: 50%;
@@ -312,22 +316,31 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .status-dot.failed { background: var(--failed); }
 .status-dot.idle { background: var(--idle); }
 
-/* ── Grid Layouts ─────────────────────────────────────────────────── */
+/* -- Grid Layouts ---------------------------------------------------- */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 1200px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
 
-/* ── Agent Card ───────────────────────────────────────────────────── */
+/* -- Dashboard Grid -------------------------------------------------- */
+.dash-grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.dash-grid-bottom { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+@media (max-width: 1200px) {
+  .dash-grid-top { grid-template-columns: 1fr 1fr; }
+  .dash-grid-bottom { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) { .dash-grid-top { grid-template-columns: 1fr; } }
+
+/* -- Agent Card ------------------------------------------------------ */
 .agent-card {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   transition: border-color 150ms;
 }
@@ -336,7 +349,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .agent-card .agent-dept { font-size: 11px; color: var(--text-muted); }
 .agent-card .agent-task { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
 
-/* ── Tabs ─────────────────────────────────────────────────────────── */
+/* -- Agent Roster Card (wider) --------------------------------------- */
+.agent-roster-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  width: 350px;
+  cursor: pointer;
+  transition: border-color 150ms;
+}
+.agent-roster-card:hover { border-color: var(--accent); }
+
+/* -- Tabs ------------------------------------------------------------ */
 .tabs {
   display: flex;
   gap: 2px;
@@ -357,7 +382,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .tab-btn:hover { color: var(--text-primary); }
 .tab-btn.active { background: var(--surface-1); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
 
-/* ── Filter Bar ───────────────────────────────────────────────────── */
+/* -- Filter Bar ------------------------------------------------------ */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -372,7 +397,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .filter-bar input[type="text"] { min-width: 200px; }
 
-/* ── Kanban ────────────────────────────────────────────────────────── */
+/* -- Kanban ---------------------------------------------------------- */
 .kanban {
   display: flex;
   gap: 12px;
@@ -381,8 +406,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   min-height: 400px;
 }
 .kanban-col {
-  min-width: 260px;
-  width: 260px;
+  min-width: 280px;
+  width: 280px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -429,14 +454,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .kanban-card:hover { border-color: var(--surface-3); }
 .kanban-card.dragging { opacity: 0.5; transform: rotate(2deg); }
-.kanban-card .kc-title { font-weight: 500; margin-bottom: 6px; }
+.kanban-card .kc-title { font-weight: 500; margin-bottom: 4px; }
+.kanban-card .kc-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; line-height: 1.4; }
 .kanban-card .kc-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .kanban-card .kc-assignee {
   width: 22px; height: 22px;
   border-radius: 50%;
   background: var(--accent);
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: #fff;
+  font-size: 10px; font-weight: 700; color: #000;
 }
 .kanban-card .kc-labels { display: flex; gap: 3px; }
 .kanban-card .kc-label-dot {
@@ -444,6 +470,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   border-radius: 50%;
   background: var(--accent);
 }
+.kanban-card .kc-due { font-size: 10px; color: var(--text-muted); }
 .kanban-card .blocked-icon { color: var(--failed); font-size: 12px; }
 .kanban-add {
   margin-top: 4px;
@@ -466,7 +493,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .kanban-add-form.show { display: flex; }
 
-/* ── Table ─────────────────────────────────────────────────────────── */
+/* -- Table ----------------------------------------------------------- */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -491,11 +518,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
   transition: background 150ms;
+  height: 40px;
 }
 .data-table tbody tr:hover { background: var(--surface-2); }
 .data-table td { padding: 8px 10px; }
 
-/* ── Timeline ─────────────────────────────────────────────────────── */
+/* -- Timeline -------------------------------------------------------- */
 .timeline-container {
   overflow-x: auto;
   position: relative;
@@ -568,7 +596,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   z-index: 1;
 }
 
-/* ── Activity Feed ────────────────────────────────────────────────── */
+/* -- Activity Feed --------------------------------------------------- */
 .activity-list { display: flex; flex-direction: column; gap: 2px; }
 .activity-item {
   display: flex;
@@ -601,7 +629,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   letter-spacing: 0.03em;
 }
 
-/* ── Calendar ─────────────────────────────────────────────────────── */
+/* -- Calendar -------------------------------------------------------- */
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -622,7 +650,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .cal-day {
   background: var(--surface-1);
-  min-height: 90px;
+  min-height: 110px;
   padding: 6px;
   cursor: pointer;
   transition: background 150ms;
@@ -633,20 +661,22 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .cal-day-num { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
 .cal-task-badge {
   font-size: 10px;
-  padding: 1px 5px;
+  padding: 2px 5px;
   border-radius: 3px;
-  background: var(--surface-3);
-  color: var(--text-secondary);
   margin-bottom: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: block;
+  cursor: pointer;
+  transition: opacity 150ms;
+  line-height: 1.3;
+}
+.cal-task-badge:hover { opacity: 0.8; }
+.cal-task-badge .cal-badge-meta {
+  font-size: 9px;
+  opacity: 0.8;
   display: block;
 }
 .cal-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .cal-nav .month-label { font-size: 16px; font-weight: 600; min-width: 180px; text-align: center; }
-.cal-sidebar { min-width: 280px; }
-.cal-layout { display: flex; gap: 20px; }
 .cal-main { flex: 1; min-width: 0; }
 .cal-day-detail {
   margin-top: 16px;
@@ -658,9 +688,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .cal-day-detail.show { display: block; }
 
-/* ── Roadmap ──────────────────────────────────────────────────────── */
+/* -- Category Colors ------------------------------------------------- */
+.cat-infrastructure { background: rgba(59,130,246,0.25); color: #93C5FD; }
+.cat-auth { background: rgba(167,139,250,0.25); color: #C4B5FD; }
+.cat-ai { background: rgba(74,222,128,0.25); color: #86EFAC; }
+.cat-ui { background: rgba(6,182,212,0.25); color: #67E8F9; }
+.cat-payments { background: rgba(249,115,22,0.25); color: #FDBA74; }
+.cat-gallery { background: rgba(236,72,153,0.25); color: #F9A8D4; }
+.cat-default { background: var(--surface-3); color: var(--text-secondary); }
+
+/* -- Roadmap --------------------------------------------------------- */
 .roadmap-phase {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -676,7 +715,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .roadmap-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 300ms; }
 
-/* ── Modal / Slide-over ───────────────────────────────────────────── */
+/* -- Modal / Slide-over ---------------------------------------------- */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -687,7 +726,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .modal-overlay.open { display: flex; }
 .modal-panel {
-  width: 520px;
+  width: 450px;
   max-width: 90vw;
   background: var(--surface-1);
   border-left: 1px solid var(--border);
@@ -712,7 +751,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .modal-field { margin-bottom: 16px; }
 .modal-field label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 4px;
@@ -732,8 +771,22 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   margin-bottom: 16px;
 }
 .modal-title-input:focus { outline: none; border-bottom: 1px solid var(--accent); }
+.modal-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-section:last-child { border-bottom: none; }
+.modal-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
 
-/* ── Tags ─────────────────────────────────────────────────────────── */
+/* -- Tags ------------------------------------------------------------ */
 .tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag {
   display: inline-flex;
@@ -748,7 +801,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .tag .tag-remove { cursor: pointer; opacity: 0.6; }
 .tag .tag-remove:hover { opacity: 1; }
 
-/* ── Shimmer / Loading ────────────────────────────────────────────── */
+/* -- Shimmer / Loading ----------------------------------------------- */
 .shimmer {
   background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
@@ -759,52 +812,38 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .shimmer-line { height: 14px; margin-bottom: 8px; }
 .shimmer-block { height: 80px; }
 
-/* ── Agent HQ Specific ────────────────────────────────────────────── */
-.hq-scoreboard {
+/* -- Agent HQ -------------------------------------------------------- */
+.hq-connection-banner {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hq-connection-banner.connected { background: rgba(34,197,94,0.1); color: var(--running); border: 1px solid rgba(34,197,94,0.2); }
+.hq-connection-banner.disconnected { background: rgba(239,68,68,0.1); color: var(--failed); border: 1px solid rgba(239,68,68,0.2); }
+
+.hq-compact-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
-.hq-agent-card {
+.hq-compact-card {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
-.hq-emoji { font-size: 28px; }
-.hq-agent-info { flex: 1; min-width: 0; }
-.hq-agent-name { font-weight: 600; font-size: 13px; }
-.hq-agent-title { font-size: 11px; color: var(--accent); }
-.hq-xp-bar {
-  height: 4px;
-  background: var(--surface-3);
-  border-radius: 2px;
-  margin-top: 6px;
-  overflow: hidden;
-}
-.hq-xp-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 300ms; }
-.hq-dept-section { margin-bottom: 20px; }
-.hq-dept-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.hq-dept-name { font-weight: 600; font-size: 14px; }
-.hq-power-bar {
-  height: 6px;
-  background: var(--surface-3);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-.hq-power-fill { height: 100%; background: var(--running); border-radius: 3px; transition: width 300ms; }
+.hq-compact-card .hq-emoji { font-size: 20px; }
 
-/* ── Chart (CSS only) ─────────────────────────────────────────────── */
+/* -- Charts ---------------------------------------------------------- */
 .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding: 0 8px; }
 .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
 .bar {
@@ -817,7 +856,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .bar-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: center; }
 .bar-value { font-size: 10px; color: var(--text-secondary); margin-bottom: 2px; }
 
-/* ── Sprint Capacity ──────────────────────────────────────────────── */
+/* -- Sprint ---------------------------------------------------------- */
 .sprint-item {
   background: var(--surface-1);
   border: 1px solid var(--border);
@@ -835,7 +874,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .sprint-capacity-fill { height: 100%; background: var(--accent); border-radius: 3px; }
 
-/* ── Positioning Chart ────────────────────────────────────────────── */
+/* -- Positioning Chart ----------------------------------------------- */
 .pos-chart {
   position: relative;
   width: 100%;
@@ -864,7 +903,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   white-space: nowrap;
 }
 
-/* ── Confirm Dialog ───────────────────────────────────────────────── */
+/* -- Confirm Dialog -------------------------------------------------- */
 .confirm-overlay {
   position: fixed;
   inset: 0;
@@ -886,7 +925,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .confirm-box p { margin-bottom: 16px; font-size: 14px; }
 .confirm-actions { display: flex; gap: 8px; justify-content: center; }
 
-/* ── Section Headers ──────────────────────────────────────────────── */
+/* -- Section Headers ------------------------------------------------- */
 .section-title {
   font-size: 13px;
   font-weight: 600;
@@ -895,16 +934,108 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+
+/* -- Collapsible Dept ------------------------------------------------ */
+.dept-section { margin-bottom: 20px; }
+.dept-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.dept-header:hover { color: var(--accent); }
+.dept-header .dept-name { font-weight: 600; font-size: 14px; }
+.dept-header .dept-meta { font-size: 12px; color: var(--text-muted); }
+.dept-agents { display: flex; flex-wrap: wrap; gap: 12px; }
+.dept-agents.collapsed { display: none; }
+
+/* -- Steps list ------------------------------------------------------ */
+.steps-list { list-style: none; counter-reset: step; }
+.steps-list li {
+  counter-increment: step;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.steps-list li::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* -- Phase roadmap horizontal ---------------------------------------- */
+.phase-timeline {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.phase-timeline-item {
+  flex: 1;
+  min-width: 200px;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  position: relative;
+}
+.phase-timeline-item:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.phase-timeline-item:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.phase-timeline-item.active { border-color: var(--accent); background: var(--accent-dim); }
+
+/* -- Feature comparison table ---------------------------------------- */
+.feature-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.feature-table th, .feature-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.feature-table th {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.feature-table .check { color: var(--running); }
+.feature-table .cross { color: var(--failed); }
+
+/* -- Cost form ------------------------------------------------------- */
+.cost-form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+.cost-form input { flex: 1; }
 </style>
 </head>
 
 <body>
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      APP SHELL
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="app">
 
-<!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+<!-- -- Sidebar -------------------------------------------------------- -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="logo"></div>
@@ -923,10 +1054,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     <div class="nav-item" data-page="calendar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>Calendar</span>
-    </div>
-    <div class="nav-item" data-page="roadmap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-      <span>Roadmap</span>
     </div>
 
     <div class="nav-label">Team</div>
@@ -974,7 +1101,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">&lsaquo;</button>
 
-<!-- ── Main ─────────────────────────────────────────────────────────── -->
+<!-- -- Main ----------------------------------------------------------- -->
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="pageTitle">Dashboard</div>
@@ -985,37 +1112,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   </div>
   <div class="content" id="content">
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: DASHBOARD
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page active" id="page-dashboard">
-  <div class="stats-row" id="dashStats">
-    <div class="stat-card"><div class="stat-label">Agents Running</div><div class="stat-value" id="statRunning">-</div></div>
-    <div class="stat-card"><div class="stat-label">Tasks In Progress</div><div class="stat-value" id="statInProgress">-</div></div>
-    <div class="stat-card"><div class="stat-label">Tasks Done</div><div class="stat-value" id="statDone">-</div></div>
-    <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value" id="statTotal">-</div></div>
-  </div>
-
-  <div class="grid-2" style="margin-bottom: 20px;">
-    <div class="card">
-      <div class="card-header"><div class="card-title">Agent Status</div></div>
-      <div id="dashAgentGrid" class="grid-2" style="gap:8px;"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Active Tasks</div></div>
-      <div id="dashActiveTasks"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><div class="card-title">Activity Feed</div></div>
-    <div id="dashActivityFeed" class="activity-list"></div>
-  </div>
+  <div id="dashboardContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: TASKS
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-tasks">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
     <div class="tabs" id="taskTabs">
@@ -1045,126 +1151,78 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   <div id="taskView-activity" style="display:none;"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: CALENDAR
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-calendar">
-  <div class="cal-layout">
-    <div class="cal-main">
-      <div class="cal-nav">
-        <button class="btn btn-secondary btn-sm" onclick="calNav(-1)">&laquo; Prev</button>
-        <div class="month-label" id="calMonthLabel"></div>
-        <button class="btn btn-secondary btn-sm" onclick="calNav(1)">Next &raquo;</button>
-        <button class="btn btn-ghost btn-sm" onclick="calToday()">Today</button>
-      </div>
-      <div class="cal-grid" id="calGrid"></div>
-      <div class="cal-day-detail" id="calDayDetail">
-        <div class="card-title" id="calDayDetailTitle"></div>
-        <div id="calDayDetailTasks" style="margin-top:8px;"></div>
-      </div>
+  <div class="cal-main">
+    <div class="cal-nav">
+      <button class="btn btn-secondary btn-sm" onclick="calNav(-1)">&laquo; Prev</button>
+      <div class="month-label" id="calMonthLabel"></div>
+      <button class="btn btn-secondary btn-sm" onclick="calNav(1)">Next &raquo;</button>
+      <button class="btn btn-ghost btn-sm" onclick="calToday()">Today</button>
     </div>
-    <div class="cal-sidebar">
-      <div class="section-title">Sprints</div>
-      <div id="calSprintList"></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-day-detail" id="calDayDetail">
+      <div class="card-title" id="calDayDetailTitle"></div>
+      <div id="calDayDetailTasks" style="margin-top:8px;"></div>
     </div>
+    <div id="calRoadmapSection" style="margin-top:24px;"></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
-     PAGE: ROADMAP
-     ═══════════════════════════════════════════════════════════════════ -->
-<div class="page" id="page-roadmap">
-  <div id="roadmapContent"></div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: AGENTS
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-agents">
   <div id="agentsContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: AGENT HQ
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-agenthq">
-  <div class="hq-scoreboard" id="hqScoreboard"></div>
-  <div id="hqDepartments"></div>
-  <div class="card" style="margin-top:20px;">
-    <div class="card-header"><div class="card-title">Live Activity Feed</div></div>
-    <div id="hqActivityFeed" class="activity-list"></div>
-  </div>
+  <div id="agenthqContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: BUSINESS
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-business">
-  <div class="section-title">MRR Projections</div>
-  <div class="card" style="margin-bottom:20px;">
-    <div class="bar-chart" id="mrrChart"></div>
-  </div>
-  <div class="section-title">Pricing Tiers</div>
-  <div class="grid-3" id="pricingTiers"></div>
-  <div class="card" style="margin-top:20px;">
-    <div class="card-header"><div class="card-title">TAM / SAM / SOM</div></div>
-    <div id="tamData"></div>
-  </div>
+  <div id="businessContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: COMPETITIVE
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-competitive">
-  <div class="section-title">Positioning Chart</div>
-  <div class="pos-chart" id="posChart"></div>
-  <div class="section-title" style="margin-top:24px;">Competitor Landscape</div>
-  <div class="grid-3" id="competitorList"></div>
+  <div id="competitiveContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: STRATEGY
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-strategy">
-  <div class="section-title">Business Implementation Plan</div>
-  <div id="bipTimeline"></div>
-  <div class="grid-2" style="margin-top:20px;">
-    <div class="card">
-      <div class="card-header"><div class="card-title">Key Risks</div></div>
-      <div id="risksList"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Key Decisions</div></div>
-      <div id="decisionsList"></div>
-    </div>
-  </div>
+  <div id="strategyContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: ANALYTICS
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-analytics">
-  <div class="section-title">API Spend (Monthly)</div>
-  <div class="card">
-    <div class="bar-chart" id="apiSpendChart"></div>
-  </div>
+  <div id="analyticsContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: COSTS
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-costs">
-  <div class="section-title">Cloud Service Costs</div>
-  <div class="grid-3" id="costsGrid"></div>
-  <div class="card" style="margin-top:20px;">
-    <div class="card-header"><div class="card-title">Monthly Total</div></div>
-    <div class="stat-value" id="costTotal">$0</div>
-  </div>
+  <div id="costsContent"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      PAGE: SETTINGS
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <div class="page" id="page-settings">
   <div class="card" style="max-width:500px;">
     <div class="card-header"><div class="card-title">Preferences</div></div>
@@ -1194,86 +1252,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- ── Task Detail Modal ───────────────────────────────────────────── -->
+<!-- -- Task Detail Modal ---------------------------------------------- -->
 <div class="modal-overlay" id="taskModal">
-  <div class="modal-panel" style="position:relative;">
+  <div class="modal-panel" style="position:relative;" id="taskModalPanel">
     <button class="modal-close" onclick="closeTaskModal()">&times;</button>
-    <input class="modal-title-input" id="modalTitle" placeholder="Task title..." onblur="saveTaskField('title', this.value)">
-    <div class="modal-field">
-      <label>Description</label>
-      <textarea id="modalDesc" onblur="saveTaskField('description', this.value)"></textarea>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="modal-field">
-        <label>Status</label>
-        <select id="modalStatus" onchange="saveTaskField('status', this.value)">
-          <option value="backlog">Backlog</option>
-          <option value="todo">To Do</option>
-          <option value="in_progress">In Progress</option>
-          <option value="review">Review</option>
-          <option value="done">Done</option>
-        </select>
-      </div>
-      <div class="modal-field">
-        <label>Priority</label>
-        <select id="modalPriority" onchange="saveTaskField('priority', this.value)">
-          <option value="p0">P0 - Critical</option>
-          <option value="p1">P1 - High</option>
-          <option value="p2">P2 - Medium</option>
-          <option value="p3">P3 - Low</option>
-        </select>
-      </div>
-      <div class="modal-field">
-        <label>Assignee</label>
-        <select id="modalAssignee" onchange="saveTaskField('assignee', this.value)">
-          <option value="">Unassigned</option>
-        </select>
-      </div>
-      <div class="modal-field">
-        <label>Due Date</label>
-        <input type="date" id="modalDueDate" onchange="saveTaskField('due_date', this.value)">
-      </div>
-      <div class="modal-field">
-        <label>Category</label>
-        <input type="text" id="modalCategory" onblur="saveTaskField('category', this.value)">
-      </div>
-      <div class="modal-field">
-        <label>Phase</label>
-        <input type="text" id="modalPhase" onblur="saveTaskField('phase', this.value)">
-      </div>
-      <div class="modal-field">
-        <label>Time Estimate (hrs)</label>
-        <input type="number" id="modalEstimate" min="0" step="0.5" onblur="saveTaskField('time_estimate_hours', parseFloat(this.value)||null)">
-      </div>
-      <div class="modal-field">
-        <label>Time Actual (hrs)</label>
-        <input type="number" id="modalActual" min="0" step="0.5" onblur="saveTaskField('time_actual_hours', parseFloat(this.value)||null)">
-      </div>
-    </div>
-    <div class="modal-field">
-      <label>PR Link</label>
-      <input type="text" id="modalPR" onblur="saveTaskField('pr_link', this.value)">
-    </div>
-    <div class="modal-field">
-      <label>Branch Name</label>
-      <input type="text" id="modalBranch" onblur="saveTaskField('branch_name', this.value)">
-    </div>
-    <div class="modal-field">
-      <label>Labels</label>
-      <div class="tag-list" id="modalLabels"></div>
-      <input type="text" id="modalLabelInput" placeholder="Type label + Enter" style="margin-top:4px;" onkeydown="if(event.key==='Enter'){addLabel(this.value);this.value='';}">
-    </div>
-    <div class="modal-field">
-      <label>Dependencies</label>
-      <select id="modalDeps" multiple style="min-height:80px;" onchange="saveDependencies()"></select>
-    </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
-      <button class="btn btn-danger" onclick="confirmDeleteTask()">Delete Task</button>
-    </div>
+    <div id="taskModalContent"></div>
   </div>
 </div>
 
-<!-- ── Confirm Dialog ──────────────────────────────────────────────── -->
+<!-- -- Confirm Dialog ------------------------------------------------- -->
 <div class="confirm-overlay" id="confirmDialog">
   <div class="confirm-box">
     <p id="confirmMessage">Are you sure?</p>
@@ -1285,13 +1272,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 </div>
 
 
-<!-- ═══════════════════════════════════════════════════════════════════
+<!-- ===================================================================
      JAVASCRIPT
-     ═══════════════════════════════════════════════════════════════════ -->
+     =================================================================== -->
 <script>
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    CONSTANTS & AGENT METADATA
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 
 const AGENT_META = {
   'eng-arch':       { name: 'Arch Agent',       dept: 'Engineering', emoji: '\u{1F3D7}\u{FE0F}' },
@@ -1319,17 +1306,23 @@ const AGENT_META = {
   'biz-finance':    { name: 'Finance Agent',    dept: 'Operations',  emoji: '\u{1F4B0}' },
 };
 
-const LEVEL_THRESHOLDS = [0, 1, 3, 4, 5, 7, 9, 12, 15, 20];
-const LEVEL_TITLES = ['', 'Intern', 'Junior', 'Mid', 'Senior', 'Staff', 'Principal', 'Distinguished', 'Fellow', 'VP', 'Legend'];
-
 const STATUS_COLUMNS = ['backlog', 'todo', 'in_progress', 'review', 'done'];
 const STATUS_LABELS = { backlog: 'Backlog', todo: 'To Do', in_progress: 'In Progress', review: 'Review', done: 'Done' };
 
 const DEPARTMENTS = ['Engineering', 'Marketing', 'Content', 'QA', 'Operations'];
 
-/* ══════════════════════════════════════════════════════════════════════
+const CATEGORY_COLORS = {
+  infrastructure: { bg: 'rgba(59,130,246,0.25)', color: '#93C5FD' },
+  auth: { bg: 'rgba(167,139,250,0.25)', color: '#C4B5FD' },
+  ai: { bg: 'rgba(74,222,128,0.25)', color: '#86EFAC' },
+  ui: { bg: 'rgba(6,182,212,0.25)', color: '#67E8F9' },
+  payments: { bg: 'rgba(249,115,22,0.25)', color: '#FDBA74' },
+  gallery: { bg: 'rgba(236,72,153,0.25)', color: '#F9A8D4' },
+};
+
+/* =====================================================================
    STATUS NORMALIZER
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function normalizeAgentStatus(s) {
   if (!s) return 'idle';
   const l = s.toLowerCase().trim();
@@ -1339,9 +1332,9 @@ function normalizeAgentStatus(s) {
   return 'idle';
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    UI STATE
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 const UIState = {
   currentPage: localStorage.getItem('v1_page') || 'dashboard',
   calMonth: new Date().getMonth(),
@@ -1352,11 +1345,12 @@ const UIState = {
   theme: localStorage.getItem('v1_theme') || 'dark',
   sidebarCollapsed: localStorage.getItem('v1_sidebar') === 'true',
   editingTaskId: null,
+  collapsedDepts: {},
 };
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    DATA STORE
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 const API_BASE = window.location.origin + '/api/data';
 
 const DataStore = {
@@ -1452,17 +1446,19 @@ const DataStore = {
   },
 
   isBlocked(task) {
-    if (!task.dependencies || !Array.isArray(task.dependencies) || task.dependencies.length === 0) return false;
-    return task.dependencies.some(depId => {
+    if (!task.dependencies && !task.depends_on) return false;
+    const deps = task.depends_on || task.dependencies;
+    if (!Array.isArray(deps) || deps.length === 0) return false;
+    return deps.some(depId => {
       const dep = this.tasks.find(t => t.id === depId);
       return dep && dep.status !== 'done';
     });
   },
 };
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    UTILITY HELPERS
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function esc(s) {
   if (s == null) return '';
   const d = document.createElement('div');
@@ -1503,24 +1499,10 @@ function priorityClass(p) {
   return 'badge-' + (p || 'p3');
 }
 
-function getLevel(tasksCompleted) {
-  let level = 1;
-  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (tasksCompleted >= LEVEL_THRESHOLDS[i]) { level = i + 1; break; }
-  }
-  return Math.min(level, 10);
-}
-
-function getLevelTitle(level) {
-  return LEVEL_TITLES[level] || 'Intern';
-}
-
-function getXPProgress(tasksCompleted) {
-  const level = getLevel(tasksCompleted);
-  if (level >= 10) return 1;
-  const cur = LEVEL_THRESHOLDS[level - 1] || 0;
-  const next = LEVEL_THRESHOLDS[level] || cur + 1;
-  return (tasksCompleted - cur) / (next - cur);
+function getCategoryStyle(cat) {
+  if (!cat) return CATEGORY_COLORS['infrastructure'] || { bg: 'var(--surface-3)', color: 'var(--text-secondary)' };
+  const key = cat.toLowerCase();
+  return CATEGORY_COLORS[key] || { bg: 'var(--surface-3)', color: 'var(--text-secondary)' };
 }
 
 function updateLoadingUI(loading) {
@@ -1548,9 +1530,9 @@ function applyFilters() {
   renderTaskView();
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    NAVIGATION
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function navigate(page) {
   UIState.currentPage = page;
   localStorage.setItem('v1_page', page);
@@ -1559,7 +1541,7 @@ function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
 
   const titles = {
-    dashboard: 'Dashboard', tasks: 'Tasks', calendar: 'Calendar', roadmap: 'Roadmap',
+    dashboard: 'Dashboard', tasks: 'Tasks', calendar: 'Calendar',
     agents: 'Agents', agenthq: 'Agent HQ', business: 'Business', competitive: 'Competitive',
     strategy: 'Strategy', analytics: 'Analytics', costs: 'Costs', settings: 'Settings',
   };
@@ -1573,7 +1555,6 @@ function renderCurrentPage() {
   if (p === 'dashboard') renderDashboard();
   else if (p === 'tasks') renderTasks();
   else if (p === 'calendar') renderCalendar();
-  else if (p === 'roadmap') renderRoadmap();
   else if (p === 'agents') renderAgents();
   else if (p === 'agenthq') renderAgentHQ();
   else if (p === 'business') renderBusiness();
@@ -1584,9 +1565,9 @@ function renderCurrentPage() {
   else if (p === 'settings') renderSettings();
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    SIDEBAR TOGGLE
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function initSidebar() {
   const sb = document.getElementById('sidebar');
   const btn = document.getElementById('sidebarToggle');
@@ -1599,18 +1580,18 @@ function initSidebar() {
   });
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    THEME
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function toggleTheme(val) {
   UIState.theme = val;
   document.documentElement.setAttribute('data-theme', val);
   localStorage.setItem('v1_theme', val);
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    RENDER: DASHBOARD
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function renderDashboard() {
   const agents = DataStore.agents;
   const tasks = DataStore.tasks;
@@ -1619,78 +1600,157 @@ function renderDashboard() {
   const running = agents.filter(a => a.status === 'running').length;
   const inProg = tasks.filter(t => t.status === 'in_progress').length;
   const done = tasks.filter(t => t.status === 'done').length;
+  const prsOpen = tasks.filter(t => t.pr_link && t.status !== 'done').length;
 
-  document.getElementById('statRunning').textContent = running;
-  document.getElementById('statInProgress').textContent = inProg;
-  document.getElementById('statDone').textContent = done;
-  document.getElementById('statTotal').textContent = tasks.length;
+  // Today's tasks
+  const todayStr = dayKey(new Date());
+  const todayTasks = tasks.filter(t =>
+    (t.due_date && t.due_date.startsWith(todayStr)) || t.status === 'in_progress'
+  ).slice(0, 8);
 
-  // Agent grid
-  const agentGrid = document.getElementById('dashAgentGrid');
-  agentGrid.innerHTML = agents.length ? agents.map(a => `
-    <div class="agent-card" onclick="navigate('agents')">
-      <div class="status-dot ${a.status}"></div>
-      <div>
-        <div class="agent-name">${esc(a.name || a.id)}</div>
-        <div class="agent-dept">${esc(a.department || '')}</div>
-        <div class="agent-task">${esc(a.current_task || 'No active task')}</div>
-      </div>
-    </div>
-  `).join('') : '<div style="color:var(--text-muted);font-size:13px;grid-column:1/-1;">No agents found</div>';
+  // Phase progress
+  const phases = [...new Set(tasks.map(t => t.phase).filter(Boolean))];
+  const currentPhase = phases[0] || 'All Tasks';
+  const phaseTasks = phases.length ? tasks.filter(t => t.phase === currentPhase) : tasks;
+  const phaseDone = phaseTasks.filter(t => t.status === 'done').length;
+  const phasePct = phaseTasks.length ? Math.round(phaseDone / phaseTasks.length * 100) : 0;
 
-  // Active tasks
-  const activeTasks = tasks.filter(t => t.status === 'in_progress').slice(0, 8);
-  document.getElementById('dashActiveTasks').innerHTML = activeTasks.length
-    ? activeTasks.map(t => `
-      <div class="activity-item" onclick="openTaskModal('${t.id}')" style="cursor:pointer;">
-        <div class="activity-icon" style="font-size:10px;font-weight:700;">${getInitials(t.assignee)}</div>
-        <div class="activity-text">
-          <div class="action">${esc(t.title)}</div>
-          <div class="details"><span class="badge ${priorityClass(t.priority)}">${(t.priority||'p3').toUpperCase()}</span> ${esc(t.assignee || 'Unassigned')}</div>
+  let html = '';
+
+  // Top row: Stats, Agents, Today's Tasks
+  html += '<div class="dash-grid-top">';
+
+  // Stats Card
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Overview</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div class="stat-label">Agents Running</div>
+          <div style="font-size:24px;font-weight:700;color:var(--accent);">${running}</div>
+        </div>
+        <div>
+          <div class="stat-label">Tasks In Progress</div>
+          <div style="font-size:24px;font-weight:700;color:var(--cyan);">${inProg}</div>
+        </div>
+        <div>
+          <div class="stat-label">Done / Total</div>
+          <div style="font-size:24px;font-weight:700;">${done} <span style="font-size:14px;color:var(--text-muted);">/ ${tasks.length}</span></div>
+        </div>
+        <div>
+          <div class="stat-label">PRs Open</div>
+          <div style="font-size:24px;font-weight:700;">${prsOpen}</div>
         </div>
       </div>
-    `).join('')
-    : '<div style="color:var(--text-muted);font-size:13px;padding:8px;">No active tasks</div>';
+    </div>
+  `;
 
-  // Activity feed
-  renderActivityFeed('dashActivityFeed', activity.slice(0, 10));
+  // Agent Status Card
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Agent Status</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;">
+        ${agents.length ? agents.map(a => {
+          const meta = AGENT_META[a.id];
+          const emoji = meta ? meta.emoji : '\u{1F916}';
+          const taskText = a.current_task ? (a.current_task.length > 35 ? a.current_task.slice(0, 35) + '...' : a.current_task) : 'Idle';
+          return `
+            <div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;">
+              <span class="status-dot ${a.status}"></span>
+              <span style="font-weight:500;min-width:80px;">${emoji} ${esc(a.name || a.id)}</span>
+              <span style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(taskText)}</span>
+            </div>
+          `;
+        }).join('') : '<div style="color:var(--text-muted);font-size:12px;">No agents found</div>'}
+      </div>
+    </div>
+  `;
+
+  // Today's Tasks Card
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Today's Tasks</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;">
+        ${todayTasks.length ? todayTasks.map(t => `
+          <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer;" onclick="openTaskModal('${t.id}')">
+            <span class="badge ${priorityClass(t.priority)}" style="font-size:10px;">${(t.priority||'p3').toUpperCase()}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${esc(t.title)}</span>
+            <span style="color:var(--text-muted);font-size:10px;">${esc(t.assignee || '')}</span>
+          </div>
+        `).join('') : '<div style="color:var(--text-muted);font-size:12px;">No tasks for today</div>'}
+      </div>
+    </div>
+  `;
+
+  html += '</div>'; // end dash-grid-top
+
+  // Bottom row: Phase Progress, Activity Feed
+  html += '<div class="dash-grid-bottom">';
+
+  // Phase Progress Card
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Phase Progress</div></div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;">${esc(currentPhase)}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">${phaseDone} / ${phaseTasks.length} tasks complete (${phasePct}%)</div>
+      <div class="roadmap-progress-bar" style="margin-bottom:12px;">
+        <div class="roadmap-progress-fill" style="width:${phasePct}%"></div>
+      </div>
+      ${phases.length > 1 ? phases.slice(1).map(ph => {
+        const pt = tasks.filter(t => t.phase === ph);
+        const pd = pt.filter(t => t.status === 'done').length;
+        const pp = pt.length ? Math.round(pd / pt.length * 100) : 0;
+        return `
+          <div style="margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+              <span>${esc(ph)}</span>
+              <span style="color:var(--text-muted);">${pp}%</span>
+            </div>
+            <div class="roadmap-progress-bar"><div class="roadmap-progress-fill" style="width:${pp}%"></div></div>
+          </div>
+        `;
+      }).join('') : ''}
+    </div>
+  `;
+
+  // Activity Feed Card
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Activity Feed</div></div>
+      <div id="dashActivityFeed" class="activity-list"></div>
+    </div>
+  `;
+
+  html += '</div>'; // end dash-grid-bottom
+
+  document.getElementById('dashboardContent').innerHTML = html;
+
+  // Render activity feed
+  renderActivityFeed('dashActivityFeed', activity.slice(0, 8));
 }
 
 function renderActivityFeed(containerId, items) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   if (!items.length) {
     container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px;">No activity yet</div>';
     return;
   }
 
-  // Group by day
-  const grouped = {};
-  items.forEach(item => {
-    const d = new Date(item.created_at);
-    const key = dayKey(d);
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(item);
-  });
-
   let html = '';
-  for (const [date, dayItems] of Object.entries(grouped)) {
-    const today = dayKey(new Date());
-    const label = date === today ? 'Today' : formatDate(date);
-    html += `<div class="activity-day-header">${label}</div>`;
-    dayItems.forEach(item => {
-      const icon = getActivityIcon(item.action);
-      html += `
-        <div class="activity-item">
-          <div class="activity-icon">${icon}</div>
-          <div class="activity-text">
-            <span class="action">${esc(item.action)}</span>
-            <span class="details"> ${esc(item.details || '')}</span>
-          </div>
-          <div class="activity-time">${timeAgo(item.created_at)}</div>
+  items.forEach(item => {
+    const icon = getActivityIcon(item.action);
+    html += `
+      <div class="activity-item">
+        <div class="activity-icon">${icon}</div>
+        <div class="activity-text">
+          <span class="action">${esc(item.action)}</span>
+          <span class="details"> ${esc(item.details || '')}</span>
         </div>
-      `;
-    });
-  }
+        <div class="activity-time">${timeAgo(item.created_at)}</div>
+      </div>
+    `;
+  });
   container.innerHTML = html;
 }
 
@@ -1707,9 +1767,9 @@ function getActivityIcon(action) {
   return '\u26A1';
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    RENDER: TASKS
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function renderTasks() {
   populateFilterDropdowns();
   renderTaskView();
@@ -1742,7 +1802,7 @@ function renderTaskView() {
   else if (mode === 'activity') renderTaskActivity();
 }
 
-/* ── Kanban ────────────────────────────────────────────────────────── */
+/* -- Kanban ---------------------------------------------------------- */
 function renderKanban() {
   const tasks = getFilteredTasks();
   const container = document.getElementById('taskView-kanban');
@@ -1784,7 +1844,9 @@ function renderKanban() {
 function renderKanbanCard(t) {
   const blocked = DataStore.isBlocked(t);
   const labels = Array.isArray(t.labels) ? t.labels : [];
-  const labelColors = ['#8B5CF6', '#3B82F6', '#22C55E', '#F97316', '#EF4444', '#EC4899'];
+  const labelColors = ['#4ADE80', '#3B82F6', '#06B6D4', '#F97316', '#EF4444', '#EC4899'];
+  const desc = t.description ? (t.description.length > 80 ? t.description.slice(0, 80) + '...' : t.description) : '';
+  const dueStr = t.due_date ? formatDate(t.due_date) : '';
 
   return `
     <div class="kanban-card ${blocked ? 'blocked' : ''}" draggable="true"
@@ -1792,9 +1854,11 @@ function renderKanbanCard(t) {
          ondragend="this.classList.remove('dragging')"
          onclick="openTaskModal('${t.id}')">
       <div class="kc-title">${esc(t.title)}</div>
+      ${desc ? `<div class="kc-desc">${esc(desc)}</div>` : ''}
       <div class="kc-meta">
         <span class="badge ${priorityClass(t.priority)}">${(t.priority||'p3').toUpperCase()}</span>
         ${t.assignee ? `<span class="kc-assignee" title="${esc(t.assignee)}">${getInitials(t.assignee)}</span>` : ''}
+        ${dueStr ? `<span class="kc-due">${dueStr}</span>` : ''}
         ${labels.length ? `<span class="kc-labels">${labels.map((l,i) => `<span class="kc-label-dot" style="background:${labelColors[i % labelColors.length]}" title="${esc(l)}"></span>`).join('')}</span>` : ''}
         ${blocked ? '<span class="blocked-icon" title="Blocked by dependency">\u{1F512}</span>' : ''}
       </div>
@@ -1836,7 +1900,7 @@ function submitQuickAdd(input, status) {
   });
 }
 
-/* ── Table View ───────────────────────────────────────────────────── */
+/* -- Table View ------------------------------------------------------- */
 function renderTable() {
   const tasks = getFilteredTasks();
   const sort = UIState.taskSort;
@@ -1898,7 +1962,7 @@ function sortTable(field) {
   renderTable();
 }
 
-/* ── Timeline View ────────────────────────────────────────────────── */
+/* -- Timeline View --------------------------------------------------- */
 function renderTimeline() {
   const tasks = getFilteredTasks().filter(t => t.created_at || t.due_date);
   if (!tasks.length) {
@@ -1925,7 +1989,6 @@ function renderTimeline() {
   const today = new Date();
   const todayPos = Math.floor((today - minDate) / 86400000) * dayWidth;
 
-  // Group by assignee
   const byAssignee = {};
   tasks.forEach(t => {
     const a = t.assignee || 'Unassigned';
@@ -1933,7 +1996,6 @@ function renderTimeline() {
     byAssignee[a].push(t);
   });
 
-  // Day headers
   let headerHtml = `<div style="width:${trackLeft}px;flex-shrink:0;"></div>`;
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(minDate);
@@ -1942,13 +2004,11 @@ function renderTimeline() {
     headerHtml += `<div class="timeline-day ${isToday ? 'today' : ''}" style="width:${dayWidth}px;">${d.getDate()}<br>${d.toLocaleString('en', {month:'short'})}</div>`;
   }
 
-  // Rows and dependency tracking for SVG arrows
   let rowsHtml = '';
   const taskPositions = {};
   let rowIdx = 0;
-  const assignees = Object.keys(byAssignee);
 
-  assignees.forEach(assignee => {
+  Object.keys(byAssignee).forEach(assignee => {
     byAssignee[assignee].forEach(t => {
       const start = t.created_at ? new Date(t.created_at) : (t.due_date ? new Date(t.due_date) : new Date());
       const end = t.due_date ? new Date(t.due_date) : new Date(start.getTime() + 86400000 * 3);
@@ -1977,11 +2037,11 @@ function renderTimeline() {
     });
   });
 
-  // SVG dependency arrows
   let svgArrows = '';
   tasks.forEach(t => {
-    if (t.dependencies && Array.isArray(t.dependencies)) {
-      t.dependencies.forEach(depId => {
+    const deps = t.depends_on || t.dependencies;
+    if (deps && Array.isArray(deps)) {
+      deps.forEach(depId => {
         const from = taskPositions[depId];
         const to = taskPositions[t.id];
         if (from && to) {
@@ -2001,7 +2061,7 @@ function renderTimeline() {
         <div class="timeline-body" style="position:relative;">
           ${rowsHtml}
           <div class="timeline-today-line" style="left:${trackLeft + todayPos}px;"></div>
-          <svg class="timeline-svg" width="${svgWidth}" height="${svgHeight}" style="left:${trackLeft}px;">
+          <svg width="${svgWidth}" height="${svgHeight}" style="position:absolute;left:${trackLeft}px;top:0;pointer-events:none;">
             <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--accent)"/></marker></defs>
             ${svgArrows}
           </svg>
@@ -2013,7 +2073,7 @@ function renderTimeline() {
   document.getElementById('taskView-timeline').innerHTML = html;
 }
 
-/* ── Task Activity View ───────────────────────────────────────────── */
+/* -- Task Activity View ---------------------------------------------- */
 function renderTaskActivity() {
   const taskIds = new Set(DataStore.tasks.map(t => t.id));
   const relevant = DataStore.activity.filter(item => {
@@ -2031,7 +2091,6 @@ function renderTaskActivity() {
   }
 
   let html = '<div class="activity-list">';
-
   const grouped = {};
   relevant.forEach(item => {
     const d = dayKey(new Date(item.created_at));
@@ -2060,42 +2119,194 @@ function renderTaskActivity() {
   container.innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   TASK MODAL
-   ══════════════════════════════════════════════════════════════════════ */
+/* =====================================================================
+   TASK MODAL (Full Detail Panel)
+   ===================================================================== */
 function openTaskModal(taskId) {
   const task = DataStore.tasks.find(t => t.id === taskId);
   if (!task) return;
   UIState.editingTaskId = taskId;
 
-  document.getElementById('modalTitle').value = task.title || '';
-  document.getElementById('modalDesc').value = task.description || '';
-  document.getElementById('modalStatus').value = task.status || 'backlog';
-  document.getElementById('modalPriority').value = task.priority || 'p2';
-  document.getElementById('modalDueDate').value = task.due_date ? task.due_date.split('T')[0] : '';
-  document.getElementById('modalCategory').value = task.category || '';
-  document.getElementById('modalPhase').value = task.phase || '';
-  document.getElementById('modalEstimate').value = task.time_estimate_hours || '';
-  document.getElementById('modalActual').value = task.time_actual_hours || '';
-  document.getElementById('modalPR').value = task.pr_link || '';
-  document.getElementById('modalBranch').value = task.branch_name || '';
+  const meta = AGENT_META[task.assignee];
+  const agentEmoji = meta ? meta.emoji : '\u{1F916}';
+  const agentName = meta ? meta.name : (task.assignee || 'Unassigned');
 
-  // Assignee dropdown
-  const assigneeSelect = document.getElementById('modalAssignee');
-  assigneeSelect.innerHTML = '<option value="">Unassigned</option>' +
-    DataStore.agents.map(a => `<option value="${esc(a.id)}" ${a.id === task.assignee ? 'selected' : ''}>${esc(a.name || a.id)}</option>`).join('');
+  const deps = task.depends_on || task.dependencies || [];
+  const depTasks = Array.isArray(deps) ? deps.map(id => DataStore.tasks.find(t => t.id === id)).filter(Boolean) : [];
+  const dependents = DataStore.tasks.filter(t => {
+    const d = t.depends_on || t.dependencies;
+    return Array.isArray(d) && d.includes(taskId);
+  });
 
-  // Labels
-  renderModalLabels(task);
+  const steps = Array.isArray(task.steps) ? task.steps : [];
+  const labels = Array.isArray(task.labels) ? task.labels : [];
 
-  // Dependencies
-  const depSelect = document.getElementById('modalDeps');
-  const deps = Array.isArray(task.dependencies) ? task.dependencies : [];
-  depSelect.innerHTML = DataStore.tasks
-    .filter(t => t.id !== taskId)
-    .map(t => `<option value="${t.id}" ${deps.includes(t.id) ? 'selected' : ''}>${esc(t.title)}</option>`)
-    .join('');
+  let html = '';
 
+  // Section 1: Header
+  html += `<div class="modal-section">
+    <input class="modal-title-input" id="modalTitle" value="${esc(task.title || '')}" placeholder="Task title..." onblur="saveTaskField('title', this.value)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="modal-field">
+        <label>Status</label>
+        <select id="modalStatus" onchange="saveTaskField('status', this.value)">
+          <option value="backlog" ${task.status==='backlog'?'selected':''}>Backlog</option>
+          <option value="todo" ${task.status==='todo'?'selected':''}>To Do</option>
+          <option value="in_progress" ${task.status==='in_progress'?'selected':''}>In Progress</option>
+          <option value="review" ${task.status==='review'?'selected':''}>Review</option>
+          <option value="done" ${task.status==='done'?'selected':''}>Done</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Priority</label>
+        <select id="modalPriority" onchange="saveTaskField('priority', this.value)">
+          <option value="p0" ${task.priority==='p0'?'selected':''}>P0 - Critical</option>
+          <option value="p1" ${task.priority==='p1'?'selected':''}>P1 - High</option>
+          <option value="p2" ${task.priority==='p2'?'selected':''}>P2 - Medium</option>
+          <option value="p3" ${task.priority==='p3'?'selected':''}>P3 - Low</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
+
+  // Section 2: Description
+  html += `<div class="modal-section">
+    <div class="modal-section-title">Description</div>
+    <div class="modal-field">
+      <textarea id="modalDesc" onblur="saveTaskField('description', this.value)" placeholder="Task description...">${esc(task.description || '')}</textarea>
+    </div>
+    ${task.goal ? `<div class="modal-field"><label>Goal</label><div style="font-size:13px;color:var(--text-secondary);">${esc(task.goal)}</div></div>` : ''}
+    ${task.purpose ? `<div class="modal-field"><label>Purpose</label><div style="font-size:13px;color:var(--text-secondary);">${esc(task.purpose)}</div></div>` : ''}
+  </div>`;
+
+  // Section 3: Steps
+  html += `<div class="modal-section">
+    <div class="modal-section-title">Steps</div>
+    ${steps.length ? `<ol class="steps-list">${steps.map(s => {
+      const stepText = typeof s === 'string' ? s : (s.description || s.title || JSON.stringify(s));
+      return `<li>${esc(stepText)}</li>`;
+    }).join('')}</ol>` : '<div style="font-size:12px;color:var(--text-muted);">No steps defined</div>'}
+  </div>`;
+
+  // Section 4: Agent & Timeline
+  html += `<div class="modal-section">
+    <div class="modal-section-title">Agent & Timeline</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="modal-field">
+        <label>Assigned Agent</label>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">
+          <span style="font-size:18px;">${agentEmoji}</span>
+          <select id="modalAssignee" onchange="saveTaskField('assignee', this.value)">
+            <option value="">Unassigned</option>
+            ${DataStore.agents.map(a => `<option value="${esc(a.id)}" ${a.id === task.assignee ? 'selected' : ''}>${esc(a.name || a.id)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Status</label>
+        <span class="badge badge-${task.status === 'in_progress' ? 'running' : task.status === 'done' ? 'completed' : 'idle'}">${STATUS_LABELS[task.status] || task.status}</span>
+      </div>
+      <div class="modal-field">
+        <label>Time Estimate (hrs)</label>
+        <input type="number" id="modalEstimate" min="0" step="0.5" value="${task.time_estimate_hours || ''}" onblur="saveTaskField('time_estimate_hours', parseFloat(this.value)||null)">
+      </div>
+      <div class="modal-field">
+        <label>Time Actual (hrs)</label>
+        <input type="number" id="modalActual" min="0" step="0.5" value="${task.time_actual_hours || ''}" onblur="saveTaskField('time_actual_hours', parseFloat(this.value)||null)">
+      </div>
+      <div class="modal-field" style="grid-column:1/-1;">
+        <label>Created</label>
+        <span style="font-size:12px;color:var(--text-muted);">${task.created_at ? new Date(task.created_at).toLocaleString() : '-'}</span>
+      </div>
+    </div>
+  </div>`;
+
+  // Section 5: Dependencies
+  html += `<div class="modal-section">
+    <div class="modal-section-title">Dependencies</div>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Depends On</label>
+      ${depTasks.length ? depTasks.map(d => `
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer;" onclick="openTaskModal('${d.id}')">
+          <span class="badge badge-${d.status === 'done' ? 'completed' : d.status === 'in_progress' ? 'running' : 'idle'}" style="font-size:10px;">${STATUS_LABELS[d.status] || d.status}</span>
+          <span>${esc(d.title)}</span>
+        </div>
+      `).join('') : '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">None</div>'}
+    </div>
+    <div>
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Depended On By</label>
+      ${dependents.length ? dependents.map(d => `
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer;" onclick="openTaskModal('${d.id}')">
+          <span class="badge badge-${d.status === 'done' ? 'completed' : d.status === 'in_progress' ? 'running' : 'idle'}" style="font-size:10px;">${STATUS_LABELS[d.status] || d.status}</span>
+          <span>${esc(d.title)}</span>
+        </div>
+      `).join('') : '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">None</div>'}
+    </div>
+    <div class="modal-field" style="margin-top:8px;">
+      <label>Edit Dependencies</label>
+      <select id="modalDeps" multiple style="min-height:60px;" onchange="saveDependencies()">
+        ${DataStore.tasks.filter(t => t.id !== taskId).map(t =>
+          `<option value="${t.id}" ${(Array.isArray(deps) && deps.includes(t.id)) ? 'selected' : ''}>${esc(t.title)}</option>`
+        ).join('')}
+      </select>
+    </div>
+  </div>`;
+
+  // Section 6: Git Activity
+  html += `<div class="modal-section">
+    <div class="modal-section-title">Git Activity</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="modal-field">
+        <label>PR Link</label>
+        ${task.pr_link ? `<a href="${esc(task.pr_link)}" target="_blank" style="font-size:13px;word-break:break-all;">${esc(task.pr_link)}</a>` : ''}
+        <input type="text" id="modalPR" value="${esc(task.pr_link || '')}" onblur="saveTaskField('pr_link', this.value)" placeholder="https://github.com/...">
+      </div>
+      <div class="modal-field">
+        <label>Branch Name</label>
+        <input type="text" id="modalBranch" value="${esc(task.branch_name || '')}" onblur="saveTaskField('branch_name', this.value)" placeholder="feat/...">
+      </div>
+    </div>
+    ${task.commit_count ? `<div style="font-size:12px;color:var(--text-muted);">${task.commit_count} commits</div>` : ''}
+  </div>`;
+
+  // Section 7: Meta
+  html += `<div class="modal-section">
+    <div class="modal-section-title">Meta</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="modal-field">
+        <label>Category</label>
+        <input type="text" id="modalCategory" value="${esc(task.category || '')}" onblur="saveTaskField('category', this.value)">
+      </div>
+      <div class="modal-field">
+        <label>Phase</label>
+        <input type="text" id="modalPhase" value="${esc(task.phase || '')}" onblur="saveTaskField('phase', this.value)">
+      </div>
+      <div class="modal-field">
+        <label>Due Date</label>
+        <input type="date" id="modalDueDate" value="${task.due_date ? task.due_date.split('T')[0] : ''}" onchange="saveTaskField('due_date', this.value)">
+      </div>
+      <div class="modal-field">
+        <label>Sprint</label>
+        <span style="font-size:12px;color:var(--text-secondary);">${esc(task.sprint_id || '-')}</span>
+      </div>
+      ${task.week ? `<div class="modal-field"><label>Week</label><span style="font-size:12px;color:var(--text-secondary);">${esc(task.week)}</span></div>` : ''}
+    </div>
+    <div class="modal-field" style="margin-top:8px;">
+      <label>Labels</label>
+      <div class="tag-list" id="modalLabels">
+        ${labels.map(l => `<span class="tag">${esc(l)} <span class="tag-remove" onclick="removeLabel('${esc(l)}')">&times;</span></span>`).join('')}
+      </div>
+      <input type="text" id="modalLabelInput" placeholder="Type label + Enter" style="margin-top:4px;" onkeydown="if(event.key==='Enter'){addLabel(this.value);this.value='';}">
+    </div>
+  </div>`;
+
+  // Section 8: Actions
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;">
+    <button class="btn btn-primary" onclick="closeTaskModal()">Save & Close</button>
+    <button class="btn btn-danger" onclick="confirmDeleteTask()">Delete Task</button>
+  </div>`;
+
+  document.getElementById('taskModalContent').innerHTML = html;
   document.getElementById('taskModal').classList.add('open');
 }
 
@@ -2128,14 +2339,6 @@ function saveTaskField(field, value) {
   DataStore.updateTask(UIState.editingTaskId, data);
 }
 
-function renderModalLabels(task) {
-  const labels = Array.isArray(task.labels) ? task.labels : [];
-  const container = document.getElementById('modalLabels');
-  container.innerHTML = labels.map(l =>
-    `<span class="tag">${esc(l)} <span class="tag-remove" onclick="removeLabel('${esc(l)}')">&times;</span></span>`
-  ).join('');
-}
-
 function addLabel(label) {
   if (!label.trim() || !UIState.editingTaskId) return;
   const task = DataStore.tasks.find(t => t.id === UIState.editingTaskId);
@@ -2145,7 +2348,7 @@ function addLabel(label) {
     labels.push(label.trim());
     DataStore.updateTask(UIState.editingTaskId, { labels }).then(() => {
       task.labels = labels;
-      renderModalLabels(task);
+      openTaskModal(UIState.editingTaskId);
     });
   }
 }
@@ -2157,7 +2360,7 @@ function removeLabel(label) {
   const labels = (Array.isArray(task.labels) ? task.labels : []).filter(l => l !== label);
   DataStore.updateTask(UIState.editingTaskId, { labels }).then(() => {
     task.labels = labels;
-    renderModalLabels(task);
+    openTaskModal(UIState.editingTaskId);
   });
 }
 
@@ -2165,7 +2368,7 @@ function saveDependencies() {
   if (!UIState.editingTaskId) return;
   const select = document.getElementById('modalDeps');
   const deps = Array.from(select.selectedOptions).map(o => o.value);
-  DataStore.updateTask(UIState.editingTaskId, { dependencies: deps });
+  DataStore.updateTask(UIState.editingTaskId, { depends_on: deps, dependencies: deps });
 }
 
 function confirmDeleteTask() {
@@ -2188,9 +2391,9 @@ function closeConfirm() {
   document.getElementById('confirmDialog').classList.remove('open');
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    RENDER: CALENDAR
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function renderCalendar() {
   const year = UIState.calYear;
   const month = UIState.calMonth;
@@ -2204,7 +2407,6 @@ function renderCalendar() {
 
   const today = dayKey(new Date());
 
-  // Build task lookup by date
   const tasksByDate = {};
   DataStore.tasks.forEach(t => {
     if (t.due_date) {
@@ -2219,14 +2421,12 @@ function renderCalendar() {
     html += `<div class="cal-day-header">${d}</div>`;
   });
 
-  // Previous month padding
   const prevMonthDays = new Date(year, month, 0).getDate();
   for (let i = startDow - 1; i >= 0; i--) {
     const day = prevMonthDays - i;
     html += `<div class="cal-day other-month"><div class="cal-day-num">${day}</div></div>`;
   }
 
-  // Current month days
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const key = dayKey(d);
@@ -2235,12 +2435,18 @@ function renderCalendar() {
 
     html += `<div class="cal-day ${isToday ? 'today' : ''}" onclick="showCalDayDetail('${key}')">
       <div class="cal-day-num">${day}</div>
-      ${dayTasks.slice(0, 3).map(t => `<div class="cal-task-badge" title="${esc(t.title)}">${esc(t.title)}</div>`).join('')}
-      ${dayTasks.length > 3 ? `<div style="font-size:10px;color:var(--text-muted);">+${dayTasks.length - 3} more</div>` : ''}
+      ${dayTasks.slice(0, 3).map(t => {
+        const catStyle = getCategoryStyle(t.category);
+        const truncTitle = t.title && t.title.length > 20 ? t.title.slice(0, 20) + '...' : (t.title || '');
+        return `<div class="cal-task-badge" style="background:${catStyle.bg};color:${catStyle.color};" title="${esc(t.title)}" onclick="event.stopPropagation();openTaskModal('${t.id}')">
+          ${esc(truncTitle)}
+          <span class="cal-badge-meta">${(t.priority||'p3').toUpperCase()} &middot; ${esc(t.assignee || '?')} &middot; ${STATUS_LABELS[t.status] || t.status}</span>
+        </div>`;
+      }).join('')}
+      ${dayTasks.length > 3 ? `<div style="font-size:9px;color:var(--text-muted);">+${dayTasks.length - 3} more</div>` : ''}
     </div>`;
   }
 
-  // Next month padding
   const totalCells = startDow + daysInMonth;
   const remaining = (7 - (totalCells % 7)) % 7;
   for (let i = 1; i <= remaining; i++) {
@@ -2249,8 +2455,8 @@ function renderCalendar() {
 
   document.getElementById('calGrid').innerHTML = html;
 
-  // Sprints sidebar
-  renderCalSprints();
+  // Roadmap section below calendar
+  renderCalRoadmap();
 }
 
 function showCalDayDetail(dateKey) {
@@ -2292,84 +2498,41 @@ function calToday() {
   renderCalendar();
 }
 
-function renderCalSprints() {
-  const container = document.getElementById('calSprintList');
-  if (!DataStore.sprints.length) {
-    container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No sprints defined.</div>';
-    return;
-  }
-
-  container.innerHTML = DataStore.sprints.map(s => {
-    const sprintTasks = DataStore.tasks.filter(t => t.sprint_id === s.id);
-    const totalHours = sprintTasks.reduce((sum, t) => sum + (t.time_estimate_hours || 0), 0);
-    const capacity = s.capacity_hours || 40;
-    const pct = Math.min(100, Math.round((totalHours / capacity) * 100));
-
-    return `
-      <div class="sprint-item">
-        <div class="sprint-name">${esc(s.name || s.id)}</div>
-        <div class="sprint-dates">${formatDate(s.start_date)} - ${formatDate(s.end_date)}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">${totalHours}h / ${capacity}h (${pct}%)</div>
-        <div class="sprint-capacity-bar">
-          <div class="sprint-capacity-fill" style="width:${pct}%;${pct > 90 ? 'background:var(--failed)' : ''}"></div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: ROADMAP
-   ══════════════════════════════════════════════════════════════════════ */
-function renderRoadmap() {
+function renderCalRoadmap() {
   const tasks = DataStore.tasks;
   const phases = [...new Set(tasks.map(t => t.phase).filter(Boolean))];
 
   if (!phases.length) {
-    document.getElementById('roadmapContent').innerHTML = `
-      <div class="roadmap-phase">
-        <div class="roadmap-phase-header">
-          <div class="roadmap-phase-name">All Tasks</div>
-          <span style="color:var(--text-muted);font-size:13px;">${tasks.filter(t=>t.status==='done').length} / ${tasks.length} done</span>
-        </div>
-        <div class="roadmap-progress-bar">
-          <div class="roadmap-progress-fill" style="width:${tasks.length ? Math.round(tasks.filter(t=>t.status==='done').length/tasks.length*100) : 0}%"></div>
-        </div>
-      </div>
-    `;
+    document.getElementById('calRoadmapSection').innerHTML = '';
     return;
   }
 
-  document.getElementById('roadmapContent').innerHTML = phases.map(phase => {
+  let html = '<div class="section-title" style="margin-top:8px;">Roadmap Progress</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+
+  phases.forEach(phase => {
     const phaseTasks = tasks.filter(t => t.phase === phase);
     const done = phaseTasks.filter(t => t.status === 'done').length;
     const pct = phaseTasks.length ? Math.round(done / phaseTasks.length * 100) : 0;
 
-    return `
-      <div class="roadmap-phase">
-        <div class="roadmap-phase-header">
-          <div class="roadmap-phase-name">${esc(phase)}</div>
-          <span style="color:var(--text-muted);font-size:13px;">${done} / ${phaseTasks.length} (${pct}%)</span>
+    html += `
+      <div class="card" style="padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:600;font-size:13px;">${esc(phase)}</span>
+          <span style="font-size:12px;color:var(--text-muted);">${done}/${phaseTasks.length} (${pct}%)</span>
         </div>
-        <div class="roadmap-progress-bar">
-          <div class="roadmap-progress-fill" style="width:${pct}%"></div>
-        </div>
-        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
-          ${phaseTasks.map(t => `
-            <span class="badge ${t.status === 'done' ? 'badge-completed' : t.status === 'in_progress' ? 'badge-running' : 'badge-idle'}"
-                  style="cursor:pointer;" onclick="openTaskModal('${t.id}')">
-              ${esc(t.title)}
-            </span>
-          `).join('')}
-        </div>
+        <div class="roadmap-progress-bar"><div class="roadmap-progress-fill" style="width:${pct}%"></div></div>
       </div>
     `;
-  }).join('');
+  });
+
+  html += '</div>';
+  document.getElementById('calRoadmapSection').innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: AGENTS
-   ══════════════════════════════════════════════════════════════════════ */
+/* =====================================================================
+   RENDER: AGENTS (Roster View)
+   ===================================================================== */
 function renderAgents() {
   const agents = DataStore.agents;
   const byDept = {};
@@ -2384,32 +2547,77 @@ function renderAgents() {
   let html = '';
   for (const [dept, deptAgents] of Object.entries(byDept)) {
     if (!deptAgents.length) continue;
-    html += `<div class="section-title" style="margin-top:16px;">${esc(dept)}</div>`;
-    html += '<div class="grid-3" style="margin-bottom:12px;">';
+    const runningCount = deptAgents.filter(a => a.status === 'running').length;
+    const isCollapsed = UIState.collapsedDepts[dept] || false;
+
+    html += `<div class="dept-section">
+      <div class="dept-header" onclick="toggleDept('${esc(dept)}')">
+        <div class="dept-name">${esc(dept)} <span style="font-size:12px;color:var(--text-muted);">(${deptAgents.length} agents, ${runningCount} running)</span></div>
+        <div class="dept-meta">${isCollapsed ? '\u25B6' : '\u25BC'}</div>
+      </div>
+      <div class="dept-agents ${isCollapsed ? 'collapsed' : ''}">`;
+
     deptAgents.forEach(a => {
       const meta = AGENT_META[a.id];
       const emoji = meta ? meta.emoji : '\u{1F916}';
+      const agentTasks = DataStore.tasks.filter(t => t.assignee === a.id);
+      const completedCount = agentTasks.filter(t => t.status === 'done').length;
+
+      // Get last 3 activity items for this agent
+      const agentActivity = DataStore.activity.filter(item => {
+        const m = item.metadata;
+        if (m && m.agentId === a.id) return true;
+        const d = (item.details || '').toLowerCase();
+        return d.includes(a.id);
+      }).slice(0, 3);
+
       html += `
-        <div class="agent-card" onclick="showAgentDetail('${esc(a.id)}')">
-          <div style="font-size:24px;">${emoji}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <div class="status-dot ${a.status}"></div>
-              <div class="agent-name">${esc(a.name || a.id)}</div>
-            </div>
-            <div class="agent-dept">${esc(a.department || '')}</div>
-            <div class="agent-task">${esc(a.current_task || 'No active task')}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-              ${a.tasks_completed || 0} tasks completed &middot; ${timeAgo(a.last_active)}
+        <div class="agent-roster-card" onclick="showAgentDetail('${esc(a.id)}')">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="font-size:28px;">${emoji}</span>
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="status-dot ${a.status}"></span>
+                <span style="font-weight:600;font-size:14px;">${esc(a.name || a.id)}</span>
+                <span class="badge badge-${a.status}" style="font-size:10px;">${a.status}</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);">${esc(a.department || '')}</div>
             </div>
           </div>
+          ${a.current_task && a.status === 'running' ? `
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;padding:6px 8px;background:var(--surface-2);border-radius:4px;">
+              Current: ${esc(a.current_task)}
+              <span style="color:var(--text-muted);font-size:10px;margin-left:4px;">${timeAgo(a.last_active)}</span>
+            </div>
+          ` : ''}
+          <div style="display:flex;gap:16px;font-size:11px;color:var(--text-muted);margin-bottom:8px;">
+            <span>${completedCount} tasks done</span>
+            <span>Last active: ${timeAgo(a.last_active)}</span>
+          </div>
+          ${agentActivity.length ? `
+            <div style="border-top:1px solid var(--border-subtle);padding-top:6px;">
+              ${agentActivity.map(act => `
+                <div style="font-size:10px;color:var(--text-muted);padding:2px 0;display:flex;gap:4px;">
+                  <span>${getActivityIcon(act.action)}</span>
+                  <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(act.action)} ${esc(act.details || '')}</span>
+                  <span>${timeAgo(act.created_at)}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
         </div>
       `;
     });
-    html += '</div>';
+
+    html += '</div></div>';
   }
 
   document.getElementById('agentsContent').innerHTML = html || '<div style="color:var(--text-muted);">No agents found.</div>';
+}
+
+function toggleDept(dept) {
+  UIState.collapsedDepts[dept] = !UIState.collapsedDepts[dept];
+  renderAgents();
 }
 
 function showAgentDetail(agentId) {
@@ -2438,291 +2646,509 @@ function showAgentDetail(agentId) {
   dialog.classList.add('open');
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: AGENT HQ (GAMIFIED)
-   ══════════════════════════════════════════════════════════════════════ */
+/* =====================================================================
+   RENDER: AGENT HQ (Live Mission Control)
+   ===================================================================== */
 function renderAgentHQ() {
   const agents = DataStore.agents;
 
-  // Scoreboard
-  const activeCount = agents.filter(a => a.status === 'running').length;
-  const missionsDone = agents.reduce((sum, a) => sum + (a.tasks_completed || 0), 0);
-  const totalXP = missionsDone * 10;
+  // Connection banner
+  const connected = DataStore.lastFetch !== null;
+  const lastSyncText = DataStore.lastFetch ? DataStore.lastFetch.toLocaleString() : 'Never';
 
-  document.getElementById('hqScoreboard').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Agents Active</div>
-      <div class="stat-value">${activeCount}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Missions Done</div>
-      <div class="stat-value">${missionsDone}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Total XP</div>
-      <div class="stat-value">${totalXP}</div>
+  let html = `
+    <div class="hq-connection-banner ${connected ? 'connected' : 'disconnected'}">
+      <span class="status-dot ${connected ? 'running' : 'failed'}"></span>
+      ${connected ? 'Connected to Jarvis Mac Mini' : 'Disconnected'}
+      <span style="margin-left:auto;font-size:11px;opacity:0.7;">Last sync: ${lastSyncText}</span>
     </div>
   `;
 
-  // Department sections with agent cards
-  const byDept = {};
+  // Compact agent grid
+  html += '<div class="section-title">Agent Grid</div>';
+  html += '<div class="hq-compact-grid">';
   agents.forEach(a => {
-    const dept = a.department || 'Other';
-    if (!byDept[dept]) byDept[dept] = [];
-    byDept[dept].push(a);
-  });
+    const meta = AGENT_META[a.id];
+    const emoji = meta ? meta.emoji : '\u{1F916}';
+    const taskTitle = a.current_task ? (a.current_task.length > 30 ? a.current_task.slice(0, 30) + '...' : a.current_task) : 'Idle';
+    const elapsed = a.last_active ? timeAgo(a.last_active) : '';
 
-  let deptHtml = '';
-  for (const [dept, deptAgents] of Object.entries(byDept)) {
-    const runningCount = deptAgents.filter(a => a.status === 'running').length;
-    const powerPct = deptAgents.length ? Math.round(runningCount / deptAgents.length * 100) : 0;
-
-    deptHtml += `
-      <div class="hq-dept-section">
-        <div class="hq-dept-header">
-          <div class="hq-dept-name">${esc(dept)}</div>
-          <span style="font-size:12px;color:var(--text-muted);">${runningCount}/${deptAgents.length} active (${powerPct}%)</span>
-        </div>
-        <div class="hq-power-bar"><div class="hq-power-fill" style="width:${powerPct}%"></div></div>
-        <div class="grid-4">
-          ${deptAgents.map(a => {
-            const meta = AGENT_META[a.id];
-            const emoji = meta ? meta.emoji : '\u{1F916}';
-            const tc = a.tasks_completed || 0;
-            const level = getLevel(tc);
-            const title = getLevelTitle(level);
-            const xpProg = getXPProgress(tc);
-            return `
-              <div class="hq-agent-card">
-                <div class="hq-emoji">${emoji}</div>
-                <div class="hq-agent-info">
-                  <div class="hq-agent-name">
-                    <span class="status-dot ${a.status}" style="margin-right:4px;"></span>
-                    ${esc(a.name || a.id)}
-                  </div>
-                  <div class="hq-agent-title">Lv.${level} ${title}</div>
-                  <div style="font-size:10px;color:var(--text-muted);">${tc * 10} XP &middot; ${tc} missions</div>
-                  <div class="hq-xp-bar"><div class="hq-xp-fill" style="width:${Math.round(xpProg * 100)}%"></div></div>
-                </div>
-              </div>
-            `;
-          }).join('')}
+    html += `
+      <div class="hq-compact-card">
+        <span class="hq-emoji">${emoji}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span class="status-dot ${a.status}"></span>
+            <span style="font-weight:600;font-size:12px;">${esc(a.name || a.id)}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(taskTitle)}</div>
+          ${a.status === 'running' && elapsed ? `<div style="font-size:10px;color:var(--cyan);">${elapsed}</div>` : ''}
         </div>
       </div>
     `;
+  });
+  html += '</div>';
+
+  // Live task feed
+  const inProgressTasks = DataStore.tasks
+    .filter(t => t.status === 'in_progress')
+    .sort((a, b) => {
+      const aAgent = DataStore.agents.find(ag => ag.id === a.assignee);
+      const bAgent = DataStore.agents.find(ag => ag.id === b.assignee);
+      const aTime = aAgent ? new Date(aAgent.last_active || 0) : new Date(0);
+      const bTime = bAgent ? new Date(bAgent.last_active || 0) : new Date(0);
+      return bTime - aTime;
+    });
+
+  html += '<div class="section-title" style="margin-top:8px;">Live Task Feed</div>';
+  html += '<div class="card">';
+  if (inProgressTasks.length) {
+    html += '<table class="data-table"><thead><tr><th>Task</th><th>Agent</th><th>Priority</th><th>Active</th></tr></thead><tbody>';
+    inProgressTasks.forEach(t => {
+      const agent = DataStore.agents.find(a => a.id === t.assignee);
+      const meta = AGENT_META[t.assignee];
+      const emoji = meta ? meta.emoji : '';
+      const elapsed = agent ? timeAgo(agent.last_active) : '';
+
+      html += `<tr onclick="openTaskModal('${t.id}')" style="cursor:pointer;">
+        <td style="font-weight:500;">${esc(t.title)}</td>
+        <td>${emoji} ${esc(t.assignee || 'Unassigned')}</td>
+        <td><span class="badge ${priorityClass(t.priority)}">${(t.priority||'p3').toUpperCase()}</span></td>
+        <td style="color:var(--text-muted);">${elapsed}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  } else {
+    html += '<div style="color:var(--text-muted);font-size:13px;padding:8px;">No tasks in progress</div>';
   }
+  html += '</div>';
 
-  document.getElementById('hqDepartments').innerHTML = deptHtml;
-
-  // Activity feed
-  renderActivityFeed('hqActivityFeed', DataStore.activity.slice(0, 15));
+  document.getElementById('agenthqContent').innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: BUSINESS (STATIC)
-   ══════════════════════════════════════════════════════════════════════ */
+/* =====================================================================
+   RENDER: BUSINESS
+   ===================================================================== */
 function renderBusiness() {
-  // MRR Chart
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const mrr = [0, 0, 500, 1200, 2500, 4800, 8000, 12000, 18000, 25000, 35000, 50000];
-  const maxMrr = Math.max(...mrr);
+  let html = '';
 
-  document.getElementById('mrrChart').innerHTML = months.map((m, i) => `
-    <div class="bar-col">
-      <div class="bar-value">$${(mrr[i]/1000).toFixed(1)}k</div>
-      <div class="bar" style="height:${maxMrr ? (mrr[i]/maxMrr*100) : 0}%"></div>
-      <div class="bar-label">${m}</div>
-    </div>
-  `).join('');
-
-  // Pricing tiers
-  document.getElementById('pricingTiers').innerHTML = `
-    <div class="card">
-      <div class="card-title" style="margin-bottom:8px;">Starter</div>
-      <div class="stat-value" style="font-size:24px;">$29<span style="font-size:13px;color:var(--text-muted);">/mo</span></div>
-      <div style="margin-top:10px;font-size:13px;color:var(--text-secondary);">
-        500 photos/mo<br>Basic AI sorting<br>1 workspace<br>Watermarked galleries
-      </div>
-    </div>
-    <div class="card" style="border-color:var(--accent);">
-      <div class="card-title" style="margin-bottom:8px;color:var(--accent);">Pro</div>
-      <div class="stat-value" style="font-size:24px;">$79<span style="font-size:13px;color:var(--text-muted);">/mo</span></div>
-      <div style="margin-top:10px;font-size:13px;color:var(--text-secondary);">
-        5,000 photos/mo<br>Advanced AI + custom categories<br>5 workspaces<br>Client delivery + payments
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title" style="margin-bottom:8px;">Studio</div>
-      <div class="stat-value" style="font-size:24px;">$199<span style="font-size:13px;color:var(--text-muted);">/mo</span></div>
-      <div style="margin-top:10px;font-size:13px;color:var(--text-secondary);">
-        Unlimited photos<br>Priority AI processing<br>Unlimited workspaces<br>White-label galleries + API
+  // Mission
+  html += `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><div class="card-title">Mission</div></div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">
+        Empower professional photographers with AI-driven tools to sort, deliver, and monetize their work.
+        View1 Studio automates the tedious post-shoot workflow: classify thousands of photos using AI,
+        deliver curated galleries to clients with watermarking controls, and manage billing seamlessly.
       </div>
     </div>
   `;
 
-  // TAM
-  document.getElementById('tamData').innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;">
-      <div>
-        <div style="font-size:12px;color:var(--text-muted);">TAM</div>
-        <div style="font-size:20px;font-weight:700;">$4.2B</div>
-        <div style="font-size:12px;color:var(--text-secondary);">Global photography software</div>
-      </div>
-      <div>
-        <div style="font-size:12px;color:var(--text-muted);">SAM</div>
-        <div style="font-size:20px;font-weight:700;">$820M</div>
-        <div style="font-size:12px;color:var(--text-secondary);">Pro photographers needing AI sorting</div>
-      </div>
-      <div>
-        <div style="font-size:12px;color:var(--text-muted);">SOM</div>
-        <div style="font-size:20px;font-weight:700;">$12M</div>
-        <div style="font-size:12px;color:var(--text-secondary);">Year 1 target (15k users)</div>
+  // Target Market
+  html += `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><div class="card-title">Target Market</div></div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+        <strong>Primary:</strong> Wedding, event, and commercial photographers who shoot 500-5,000+ photos per session.<br>
+        <strong>Secondary:</strong> Photography studios and agencies needing team workflows and client delivery.<br>
+        <strong>Market Size:</strong> 2M+ professional photographers globally, $4.2B photography software market.
       </div>
     </div>
   `;
-}
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: COMPETITIVE (STATIC)
-   ══════════════════════════════════════════════════════════════════════ */
-function renderCompetitive() {
-  const competitors = [
-    { name: 'Lightroom', x: 80, y: 70, color: '#3B82F6', desc: 'Full editing suite, limited AI sorting' },
-    { name: 'Pic-Time', x: 60, y: 50, color: '#22C55E', desc: 'Gallery delivery, no AI' },
-    { name: 'ShootProof', x: 50, y: 45, color: '#F97316', desc: 'Client proofing, manual workflow' },
-    { name: 'Pixieset', x: 55, y: 55, color: '#A78BFA', desc: 'Beautiful galleries, no sorting' },
-    { name: 'Narrative Select', x: 70, y: 35, color: '#EC4899', desc: 'AI culling only, no delivery' },
-    { name: 'View1 Studio', x: 85, y: 85, color: '#8B5CF6', desc: 'AI sorting + delivery + payments' },
+  // Revenue Model
+  html += '<div class="section-title">Revenue Model — 4 Tiers</div>';
+  html += '<div class="grid-4" style="margin-bottom:16px;">';
+  const tiers = [
+    { name: 'Free', price: '$0', features: ['50 photos/mo', 'Basic AI sorting', '1 workspace', 'Watermarked preview'] },
+    { name: 'Starter', price: '$29/mo', features: ['500 photos/mo', 'Basic AI sorting', '1 workspace', 'Watermarked galleries'] },
+    { name: 'Pro', price: '$79/mo', features: ['5,000 photos/mo', 'Advanced AI + custom categories', '5 workspaces', 'Client delivery + payments'], highlight: true },
+    { name: 'Studio', price: '$199/mo', features: ['Unlimited photos', 'Priority AI processing', 'Unlimited workspaces', 'White-label + API'] },
   ];
 
-  const chart = document.getElementById('posChart');
-  chart.innerHTML = `
-    <div class="pos-axis-x" style="bottom:8px;left:50%;transform:translateX(-50%);">AI Capability &rarr;</div>
-    <div class="pos-axis-y" style="left:8px;top:50%;transform:rotate(-90deg) translateX(-50%);transform-origin:left;">Workflow Integration &rarr;</div>
-    ${competitors.map(c => `
-      <div class="pos-dot" style="left:${c.x}%;bottom:${c.y}%;background:${c.color};" title="${c.name}"></div>
-      <div class="pos-label" style="left:${c.x}%;bottom:${c.y - 5}%;">${c.name}</div>
-    `).join('')}
+  tiers.forEach(tier => {
+    html += `
+      <div class="card" style="${tier.highlight ? 'border-color:var(--accent);' : ''}">
+        <div class="card-title" style="margin-bottom:8px;${tier.highlight ? 'color:var(--accent);' : ''}">${tier.name}</div>
+        <div style="font-size:24px;font-weight:700;margin-bottom:8px;">${tier.price}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+          ${tier.features.map(f => f).join('<br>')}
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  // Key Metrics
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Key Metrics Targets (Year 1)</div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px;">
+        <div>
+          <div class="stat-label">Users</div>
+          <div style="font-size:20px;font-weight:700;">15,000</div>
+        </div>
+        <div>
+          <div class="stat-label">MRR</div>
+          <div style="font-size:20px;font-weight:700;">$50K</div>
+        </div>
+        <div>
+          <div class="stat-label">Churn Rate</div>
+          <div style="font-size:20px;font-weight:700;">&lt;5%</div>
+        </div>
+        <div>
+          <div class="stat-label">NPS</div>
+          <div style="font-size:20px;font-weight:700;">60+</div>
+        </div>
+      </div>
+    </div>
   `;
 
-  document.getElementById('competitorList').innerHTML = competitors.map(c => `
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <div style="width:12px;height:12px;border-radius:50%;background:${c.color};"></div>
-        <div class="card-title">${esc(c.name)}</div>
-      </div>
-      <div style="font-size:13px;color:var(--text-secondary);">${esc(c.desc)}</div>
-    </div>
-  `).join('');
+  document.getElementById('businessContent').innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: STRATEGY (STATIC)
-   ══════════════════════════════════════════════════════════════════════ */
+/* =====================================================================
+   RENDER: COMPETITIVE
+   ===================================================================== */
+function renderCompetitive() {
+  const competitors = [
+    { name: 'Lightroom', color: '#3B82F6', desc: 'Full editing suite, limited AI sorting', pricing: '$9.99/mo', features: ['Photo editing', 'Cloud storage', 'Mobile app'], advantage: 'No AI sorting, no client delivery' },
+    { name: 'Pic-Time', color: '#22C55E', desc: 'Gallery delivery focused, no AI', pricing: '$18-50/mo', features: ['Online galleries', 'Client proofing', 'E-commerce'], advantage: 'No AI, manual sorting only' },
+    { name: 'ShootProof', color: '#F97316', desc: 'Client proofing and sales', pricing: '$10-39/mo', features: ['Client galleries', 'Print sales', 'Contracts'], advantage: 'No AI, limited automation' },
+    { name: 'Pixieset', color: '#A78BFA', desc: 'Beautiful galleries, no sorting', pricing: '$8-25/mo', features: ['Galleries', 'Client favorites', 'Downloads'], advantage: 'No AI, no payment processing' },
+    { name: 'Narrative Select', color: '#EC4899', desc: 'AI culling only', pricing: '$99/mo', features: ['AI culling', 'Selection tools'], advantage: 'Culling only, no delivery or payments' },
+  ];
+
+  let html = '';
+
+  // Overview
+  html += `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><div class="card-title">Market Positioning</div></div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+        View1 Studio is the first platform to combine AI-powered photo sorting, client gallery delivery,
+        and integrated payment processing in a single workflow. While competitors offer pieces of the puzzle,
+        none provide the end-to-end solution photographers need.
+      </div>
+    </div>
+  `;
+
+  // Competitor Cards
+  html += '<div class="section-title">Competitor Landscape</div>';
+  html += '<div class="grid-3" style="margin-bottom:24px;">';
+  competitors.forEach(c => {
+    html += `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:${c.color};"></div>
+          <div class="card-title">${esc(c.name)}</div>
+          <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">${c.pricing}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">${esc(c.desc)}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${c.features.join(' &middot; ')}</div>
+        <div style="font-size:12px;color:var(--accent);font-weight:500;">Our edge: ${esc(c.advantage)}</div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  // Feature Comparison Table
+  html += '<div class="section-title">Feature Comparison</div>';
+  html += `<div class="card"><table class="feature-table">
+    <thead><tr><th>Feature</th><th>View1</th><th>Lightroom</th><th>Pic-Time</th><th>ShootProof</th><th>Narrative</th></tr></thead>
+    <tbody>
+      <tr><td>AI Photo Sorting</td><td class="check">Yes</td><td class="cross">No</td><td class="cross">No</td><td class="cross">No</td><td class="check">Partial</td></tr>
+      <tr><td>Client Galleries</td><td class="check">Yes</td><td class="cross">No</td><td class="check">Yes</td><td class="check">Yes</td><td class="cross">No</td></tr>
+      <tr><td>Payment Processing</td><td class="check">Yes</td><td class="cross">No</td><td class="check">Yes</td><td class="check">Yes</td><td class="cross">No</td></tr>
+      <tr><td>Watermarking</td><td class="check">Yes</td><td class="cross">No</td><td class="check">Yes</td><td class="check">Yes</td><td class="cross">No</td></tr>
+      <tr><td>Custom Categories</td><td class="check">Yes</td><td class="cross">No</td><td class="cross">No</td><td class="cross">No</td><td class="cross">No</td></tr>
+      <tr><td>Browser-side AI</td><td class="check">Yes</td><td class="cross">No</td><td class="cross">No</td><td class="cross">No</td><td class="cross">No</td></tr>
+      <tr><td>API Access</td><td class="check">Yes</td><td class="check">Yes</td><td class="cross">No</td><td class="cross">No</td><td class="cross">No</td></tr>
+    </tbody>
+  </table></div>`;
+
+  document.getElementById('competitiveContent').innerHTML = html;
+}
+
+/* =====================================================================
+   RENDER: STRATEGY
+   ===================================================================== */
 function renderStrategy() {
+  const tasks = DataStore.tasks;
   const phases = [
     { name: 'Phase 1: Foundation', date: 'Mar-Apr 2026', items: ['Auth + workspace setup', 'Image upload pipeline', 'Basic AI classification', 'Database schema + RLS'] },
     { name: 'Phase 2: Core Product', date: 'May-Jun 2026', items: ['Advanced AI sorting', 'Gallery builder', 'Client delivery flow', 'Stripe billing integration'] },
     { name: 'Phase 3: Growth', date: 'Jul-Sep 2026', items: ['Marketing site launch', 'SEO + content strategy', 'Beta user program', 'Analytics dashboard'] },
-    { name: 'Phase 4: Scale', date: 'Oct-Dec 2026', items: ['Enterprise features', 'API marketplace', 'White-label solution', 'Mobile app planning'] },
   ];
 
-  document.getElementById('bipTimeline').innerHTML = phases.map(p => `
-    <div class="roadmap-phase">
-      <div class="roadmap-phase-header">
-        <div class="roadmap-phase-name">${esc(p.name)}</div>
-        <span style="font-size:12px;color:var(--text-muted);">${esc(p.date)}</span>
+  let html = '';
+
+  // Phase roadmap - horizontal timeline
+  html += '<div class="section-title">Phase Roadmap</div>';
+  html += '<div class="phase-timeline" style="margin-bottom:24px;">';
+  phases.forEach((p, i) => {
+    // Calculate live progress from DataStore tasks
+    const phaseKey = p.name.split(':')[0].trim().toLowerCase().replace('phase ', 'phase_');
+    const phaseTasks = tasks.filter(t => {
+      const tp = (t.phase || '').toLowerCase();
+      return tp.includes(phaseKey) || tp.includes(p.name.toLowerCase()) || tp.includes(`phase ${i+1}`);
+    });
+    const phaseDone = phaseTasks.filter(t => t.status === 'done').length;
+    const phasePct = phaseTasks.length ? Math.round(phaseDone / phaseTasks.length * 100) : 0;
+    const isActive = i === 0;
+
+    html += `
+      <div class="phase-timeline-item ${isActive ? 'active' : ''}">
+        <div style="font-weight:600;font-size:13px;margin-bottom:4px;">${esc(p.name)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${esc(p.date)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+          ${p.items.map(item => `<span class="badge badge-idle" style="font-size:10px;">${esc(item)}</span>`).join('')}
+        </div>
+        ${phaseTasks.length ? `
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">${phaseDone}/${phaseTasks.length} tasks (${phasePct}%)</div>
+          <div class="roadmap-progress-bar"><div class="roadmap-progress-fill" style="width:${phasePct}%"></div></div>
+        ` : '<div style="font-size:11px;color:var(--text-muted);">No tasks linked yet</div>'}
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:11px;" onclick="navigate('tasks')">View Tasks</button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
-        ${p.items.map(item => `<span class="badge badge-idle">${esc(item)}</span>`).join('')}
-      </div>
-    </div>
-  `).join('');
+    `;
+  });
+  html += '</div>';
 
-  const risks = [
-    { risk: 'AI model accuracy below 90%', mitigation: 'Fine-tune with photographer datasets, allow manual corrections' },
-    { risk: 'Stripe Connect compliance', mitigation: 'Work with Stripe partner team, legal review' },
-    { risk: 'Image storage costs at scale', mitigation: 'Cloudflare Images CDN, aggressive caching, tiered storage' },
-    { risk: 'Competitor launches similar AI', mitigation: 'Focus on workflow integration, not just AI' },
-  ];
-
-  document.getElementById('risksList').innerHTML = risks.map(r => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
-      <div style="font-size:13px;font-weight:500;color:var(--failed);">${esc(r.risk)}</div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${esc(r.mitigation)}</div>
-    </div>
-  `).join('');
-
+  // Key Decisions
   const decisions = [
-    { decision: 'Use SigLIP over CLIP for classification', status: 'Decided', reason: 'Better zero-shot accuracy on photography domains' },
-    { decision: 'Browser-side AI inference', status: 'Decided', reason: 'No server costs, privacy-preserving, works offline' },
-    { decision: 'Supabase over Firebase', status: 'Decided', reason: 'Postgres, RLS, better developer experience' },
-    { decision: 'Monorepo with Turborepo', status: 'Decided', reason: 'Shared types, unified CI, code reuse' },
+    { decision: 'Use SigLIP over CLIP for classification', date: 'Mar 2026', reason: 'Better zero-shot accuracy on photography domains' },
+    { decision: 'Browser-side AI inference', date: 'Mar 2026', reason: 'No server costs, privacy-preserving, works offline' },
+    { decision: 'Supabase over Firebase', date: 'Mar 2026', reason: 'Postgres, RLS, better developer experience' },
+    { decision: 'Monorepo with Turborepo', date: 'Mar 2026', reason: 'Shared types, unified CI, code reuse' },
   ];
 
-  document.getElementById('decisionsList').innerHTML = decisions.map(d => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span class="badge badge-completed">${esc(d.status)}</span>
-        <span style="font-size:13px;font-weight:500;">${esc(d.decision)}</span>
+  // Risks
+  const risks = [
+    { risk: 'AI model accuracy below 90%', severity: 'High', mitigation: 'Fine-tune with photographer datasets, allow manual corrections' },
+    { risk: 'Stripe Connect compliance', severity: 'Medium', mitigation: 'Work with Stripe partner team, legal review' },
+    { risk: 'Image storage costs at scale', severity: 'Medium', mitigation: 'Cloudflare Images CDN, aggressive caching, tiered storage' },
+    { risk: 'Competitor launches similar AI', severity: 'Low', mitigation: 'Focus on workflow integration, not just AI' },
+  ];
+
+  html += '<div class="grid-2" style="margin-bottom:20px;">';
+
+  // Decisions
+  html += `<div class="card">
+    <div class="card-header"><div class="card-title">Key Decisions</div></div>
+    ${decisions.map(d => `
+      <div style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="badge badge-completed" style="font-size:10px;">Decided</span>
+          <span style="font-size:13px;font-weight:500;">${esc(d.decision)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${esc(d.reason)}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${esc(d.date)}</div>
       </div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${esc(d.reason)}</div>
-    </div>
-  `).join('');
+    `).join('')}
+  </div>`;
+
+  // Risks
+  html += `<div class="card">
+    <div class="card-header"><div class="card-title">Key Risks</div></div>
+    ${risks.map(r => {
+      const sevColor = r.severity === 'High' ? 'var(--failed)' : r.severity === 'Medium' ? 'var(--p1)' : 'var(--text-muted)';
+      return `
+        <div style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;font-weight:600;color:${sevColor};">${esc(r.severity)}</span>
+            <span style="font-size:13px;font-weight:500;">${esc(r.risk)}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Mitigation: ${esc(r.mitigation)}</div>
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+
+  html += '</div>';
+
+  document.getElementById('strategyContent').innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: ANALYTICS (STATIC)
-   ══════════════════════════════════════════════════════════════════════ */
+/* =====================================================================
+   RENDER: ANALYTICS
+   ===================================================================== */
 function renderAnalytics() {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const spend = [120, 185, 340, 520, 680, 890, 1100, 1350, 1600, 1900, 2300, 2800];
-  const maxSpend = Math.max(...spend);
+  const agents = DataStore.agents;
+  let html = '';
 
-  document.getElementById('apiSpendChart').innerHTML = months.map((m, i) => `
-    <div class="bar-col">
-      <div class="bar-value">$${spend[i]}</div>
-      <div class="bar" style="height:${(spend[i]/maxSpend*100)}%;background:${i < 3 ? 'var(--running)' : i < 6 ? 'var(--accent)' : 'var(--completed)'}"></div>
-      <div class="bar-label">${m}</div>
+  // Agent Productivity Table
+  html += '<div class="section-title">Agent Productivity</div>';
+  html += `<div class="card" style="margin-bottom:20px;">
+    <table class="data-table">
+      <thead><tr><th>Agent</th><th>Department</th><th>Tasks Completed</th><th>PRs Created</th><th>Status</th></tr></thead>
+      <tbody>
+        ${agents.map(a => {
+          const prs = DataStore.tasks.filter(t => t.assignee === a.id && t.pr_link).length;
+          return `<tr>
+            <td style="font-weight:500;">${esc(a.name || a.id)}</td>
+            <td>${esc(a.department || '-')}</td>
+            <td>${a.tasks_completed || 0}</td>
+            <td>${prs}</td>
+            <td><span class="badge badge-${a.status}">${a.status}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  // API Spend
+  html += '<div class="section-title">API Spend</div>';
+  html += '<div class="grid-4" style="margin-bottom:20px;">';
+  const apiServices = [
+    { name: 'Anthropic', icon: '\u{1F9E0}', desc: 'Claude API for agent orchestration' },
+    { name: 'Supabase', icon: '\u{1F5C4}\u{FE0F}', desc: 'Database, Auth, Storage' },
+    { name: 'Vercel', icon: '\u25B2', desc: 'Hosting & Edge Functions' },
+    { name: 'Cloudflare', icon: '\u2601\u{FE0F}', desc: 'Image CDN & transforms' },
+  ];
+
+  apiServices.forEach(svc => {
+    html += `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="font-size:16px;">${svc.icon}</span>
+          <span class="card-title">${esc(svc.name)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${esc(svc.desc)}</div>
+        <button class="btn btn-secondary btn-sm" style="width:100%;">Connect API</button>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  // Manual cost entry
+  html += `
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header"><div class="card-title">Manual Cost Entry</div></div>
+      <div class="cost-form">
+        <div class="modal-field" style="margin-bottom:0;flex:2;">
+          <label>Service</label>
+          <input type="text" id="costServiceName" placeholder="Service name">
+        </div>
+        <div class="modal-field" style="margin-bottom:0;flex:1;">
+          <label>Monthly Cost</label>
+          <input type="number" id="costAmount" placeholder="$0" min="0" step="1">
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:0;" onclick="addManualCost()">Add</button>
+      </div>
+      <div id="manualCostsList" style="margin-top:8px;"></div>
+    </div>
+  `;
+
+  // Build/Deploy
+  html += `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Build / Deploy</div></div>
+      <div style="font-size:13px;color:var(--text-secondary);">
+        <div style="margin-bottom:8px;">Vercel Dashboard: <a href="https://vercel.com" target="_blank">Open Vercel</a></div>
+        <div>Last deploy: <span style="color:var(--text-muted);">Check Vercel dashboard</span></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('analyticsContent').innerHTML = html;
+}
+
+// Simple local manual cost tracking
+let manualCosts = JSON.parse(localStorage.getItem('v1_manual_costs') || '[]');
+
+function addManualCost() {
+  const name = document.getElementById('costServiceName').value.trim();
+  const amount = parseFloat(document.getElementById('costAmount').value) || 0;
+  if (!name) return;
+  manualCosts.push({ name, amount });
+  localStorage.setItem('v1_manual_costs', JSON.stringify(manualCosts));
+  document.getElementById('costServiceName').value = '';
+  document.getElementById('costAmount').value = '';
+  renderManualCosts();
+}
+
+function renderManualCosts() {
+  const container = document.getElementById('manualCostsList');
+  if (!container) return;
+  if (!manualCosts.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);">No manual costs added</div>';
+    return;
+  }
+  container.innerHTML = manualCosts.map((c, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border-subtle);">
+      <span>${esc(c.name)}</span>
+      <span>$${c.amount}/mo <span style="cursor:pointer;color:var(--failed);margin-left:4px;" onclick="removeManualCost(${i})">&times;</span></span>
     </div>
   `).join('');
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RENDER: COSTS (STATIC)
-   ══════════════════════════════════════════════════════════════════════ */
+function removeManualCost(idx) {
+  manualCosts.splice(idx, 1);
+  localStorage.setItem('v1_manual_costs', JSON.stringify(manualCosts));
+  renderManualCosts();
+}
+
+/* =====================================================================
+   RENDER: COSTS
+   ===================================================================== */
 function renderCosts() {
   const services = [
-    { name: 'Supabase', cost: 25, plan: 'Pro', desc: 'Database, Auth, Storage, Edge Functions' },
-    { name: 'Vercel', cost: 20, plan: 'Pro', desc: 'Hosting, Serverless Functions, Edge' },
-    { name: 'Cloudflare Images', cost: 5, plan: 'Pay-as-you-go', desc: 'Image transforms, CDN delivery' },
-    { name: 'Claude API', cost: 150, plan: 'Usage-based', desc: 'AI agent orchestration' },
-    { name: 'Stripe', cost: 0, plan: '2.9% + 30c', desc: 'Payment processing (pass-through)' },
-    { name: 'GitHub', cost: 4, plan: 'Team', desc: 'Code hosting, CI/CD' },
-    { name: 'Domain + DNS', cost: 12, plan: 'Annual', desc: 'view1.studio domain' },
-    { name: 'Monitoring', cost: 0, plan: 'Free tier', desc: 'Sentry error tracking' },
-    { name: 'Email (Resend)', cost: 0, plan: 'Free tier', desc: 'Transactional email' },
+    { name: 'Supabase', cost: 25, plan: 'Pro', desc: 'Database, Auth, Storage, Edge Functions', status: 'Active' },
+    { name: 'Vercel', cost: 0, plan: 'Hobby', desc: 'Hosting, Serverless Functions', status: 'Active' },
+    { name: 'Cloudflare Images', cost: 0, plan: 'Free tier', desc: 'Image transforms, CDN delivery', status: 'Active' },
+    { name: 'Claude API (Anthropic)', cost: 150, plan: 'Usage-based', desc: 'AI agent orchestration', status: 'Active' },
+    { name: 'Stripe', cost: 0, plan: '2.9% + 30c', desc: 'Payment processing (pass-through)', status: 'Active' },
+    { name: 'GitHub', cost: 4, plan: 'Team', desc: 'Code hosting, CI/CD', status: 'Active' },
+    { name: 'Domain + DNS', cost: 1, plan: 'Annual ($12/yr)', desc: 'view1.studio domain', status: 'Active' },
+    { name: 'Monitoring (Sentry)', cost: 0, plan: 'Free tier', desc: 'Error tracking', status: 'Active' },
+    { name: 'Email (Resend)', cost: 0, plan: 'Free tier', desc: 'Transactional email', status: 'Pending' },
   ];
 
   const total = services.reduce((s, svc) => s + svc.cost, 0);
 
-  document.getElementById('costsGrid').innerHTML = services.map(s => `
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div class="card-title">${esc(s.name)}</div>
-        <span style="font-weight:700;font-size:16px;">$${s.cost}</span>
-      </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">${esc(s.plan)}</div>
-      <div style="font-size:12px;color:var(--text-secondary);">${esc(s.desc)}</div>
-    </div>
-  `).join('');
+  let html = '';
 
-  document.getElementById('costTotal').textContent = `$${total}/mo`;
+  // Total burn rate
+  html += `
+    <div class="card" style="margin-bottom:16px;border-color:var(--accent);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="stat-label">Monthly Burn Rate</div>
+          <div class="stat-value" style="color:var(--accent);">$${total}/mo</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);text-align:right;">
+          Annual estimate: $${total * 12}/yr<br>
+          <span style="font-style:italic;">Auto-pull from APIs coming soon</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Cost breakdown table
+  html += '<div class="section-title">Service Breakdown</div>';
+  html += `<div class="card">
+    <table class="data-table">
+      <thead><tr><th>Service</th><th>Monthly Cost</th><th>Plan</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        ${services.map(s => `
+          <tr>
+            <td style="font-weight:500;">${esc(s.name)}</td>
+            <td style="font-weight:600;">${s.cost > 0 ? '$' + s.cost : 'Free'}</td>
+            <td style="color:var(--text-muted);">${esc(s.plan)}</td>
+            <td><span class="badge ${s.status === 'Active' ? 'badge-running' : 'badge-idle'}">${s.status}</span></td>
+            <td style="font-size:12px;color:var(--text-muted);">${esc(s.desc)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  document.getElementById('costsContent').innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    RENDER: SETTINGS
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 function renderSettings() {
   document.getElementById('themeSelect').value = UIState.theme;
   document.getElementById('settingsLastSync').textContent = DataStore.lastFetch
@@ -2731,9 +3157,9 @@ function renderSettings() {
   document.getElementById('settingsSyncStatus').textContent = DataStore.loading ? 'Syncing...' : 'Connected';
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    AUTO-REFRESH
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 let refreshInterval = null;
 
 function startAutoRefresh() {
@@ -2756,9 +3182,9 @@ function updateSyncLabel() {
   }
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* =====================================================================
    INIT
-   ══════════════════════════════════════════════════════════════════════ */
+   ===================================================================== */
 document.addEventListener('DOMContentLoaded', async () => {
   // Apply saved theme
   document.documentElement.setAttribute('data-theme', UIState.theme);
@@ -2785,10 +3211,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('taskModal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('taskModal')) closeTaskModal();
   });
-
-  // Show loading shimmer
-  document.getElementById('dashAgentGrid').innerHTML = '<div class="shimmer shimmer-block" style="grid-column:1/-1;"></div>';
-  document.getElementById('dashActiveTasks').innerHTML = '<div class="shimmer shimmer-line"></div><div class="shimmer shimmer-line" style="width:80%"></div><div class="shimmer shimmer-line" style="width:60%"></div>';
 
   // Initial data fetch
   await DataStore.fetchAll();
