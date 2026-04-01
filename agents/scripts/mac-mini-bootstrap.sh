@@ -79,14 +79,14 @@ else
   gh repo clone kyletdow47/view1-studio "$PROJECT_DIR"
 fi
 
-# Also clone photo-sorter for the dashboard
-PHOTO_DIR="$HOME/photo-sorter"
+# Also clone view1-sort (photographer dashboard product)
+PHOTO_DIR="$HOME/view1-sort"
 if [ -d "$PHOTO_DIR/.git" ]; then
-  echo "  ✓ photo-sorter already cloned, pulling latest..."
+  echo "  ✓ view1-sort already cloned, pulling latest..."
   cd "$PHOTO_DIR" && git pull origin main 2>/dev/null || true
 else
-  echo "  Cloning photo-sorter..."
-  gh repo clone kyletdow47/photo-sorter "$PHOTO_DIR"
+  echo "  Cloning view1-sort..."
+  gh repo clone kyletdow47/view1-sort "$PHOTO_DIR"
 fi
 
 echo ""
