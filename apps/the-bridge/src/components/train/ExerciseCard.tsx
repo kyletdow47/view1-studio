@@ -28,6 +28,8 @@ type Props = {
   dayIndex: number
   log: ExerciseLog | undefined
   allWorkoutLogs: WorkoutLog[]
+  /** if provided, shows a small × button to remove this card from today's session */
+  onRemove?: () => void
 }
 
 export function ExerciseCard({
@@ -36,6 +38,7 @@ export function ExerciseCard({
   dayIndex,
   log,
   allWorkoutLogs,
+  onRemove,
 }: Props) {
   const [infoOpen, setInfoOpen] = useState(false)
   const [plateOpen, setPlateOpen] = useState(false)
@@ -84,17 +87,31 @@ export function ExerciseCard({
             {exercise.targetSets} × {exercise.targetReps} @ RIR {exercise.targetRIR}
           </p>
         </div>
-        <button
-          onClick={() => setInfoOpen((v) => !v)}
-          className="text-white/50 hover:text-white tap-target -mr-2"
-          aria-label="Form info"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-0.5 -mr-2">
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              className="text-white/45 hover:text-red-300 tap-target"
+              aria-label="Remove from session"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={() => setInfoOpen((v) => !v)}
+            className="text-white/50 hover:text-white tap-target"
+            aria-label="Form info"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {infoOpen && (

@@ -1,13 +1,29 @@
 export type ExercisePriority = 'main' | 'secondary' | 'finisher'
 
+export const EXERCISE_CATEGORIES = [
+  'Quads',
+  'Hamstrings/Glutes',
+  'Calves',
+  'Chest',
+  'Back',
+  'Shoulders',
+  'Biceps',
+  'Triceps',
+  'Core',
+  'Cardio',
+  'Other',
+] as const
+export type ExerciseCategory = (typeof EXERCISE_CATEGORIES)[number]
+
 export type ExerciseDef = {
   name: string
   priority: ExercisePriority
-  /** seconds — main: 150, secondary: 90, finisher: 60 */
+  category: ExerciseCategory
+  /** seconds — main: 150, secondary: 90, finisher: 60, cardio: 0 */
   restSec: number
   /** target set count */
   targetSets: number
-  /** display string e.g. "6-8" or "10-12" */
+  /** display string e.g. "6-8" or "10-12" or "10-20 min" */
   targetReps: string
   /** target RIR e.g. "2-3" */
   targetRIR: string

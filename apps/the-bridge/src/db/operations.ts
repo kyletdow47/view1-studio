@@ -113,6 +113,26 @@ export async function setExerciseNotes(
   await upsertExerciseLog(date, dayIndex, exerciseName, (e) => ({ ...e, notes }))
 }
 
+/** Adds an empty exercise entry to a log (no-op if it already exists). */
+export async function addExerciseToLog(
+  date: string,
+  dayIndex: number,
+  exerciseName: string
+): Promise<void> {
+  await upsertExerciseLog(date, dayIndex, exerciseName, (e) => e)
+}
+
+/** Removes the entire exercise entry from a log (sets + notes gone). */
+export async function removeExerciseFromLog(
+  date: string,
+  exerciseName: string
+): Promise<void> {
+  const log = await getDB().workoutLogs.get(date)
+  if (!log) return
+  const exercises = log.exercises.filter((e) => e.name !== exerciseName)
+  await getDB().workoutLogs.put({ ...log, exercises })
+}
+
 export async function getAllWorkoutLogs(): Promise<WorkoutLog[]> {
   return getDB().workoutLogs.toArray()
 }
