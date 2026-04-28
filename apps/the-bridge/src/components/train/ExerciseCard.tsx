@@ -221,14 +221,14 @@ function SetRow({
   onDelete: () => void
 }) {
   return (
-    <li className="flex items-center gap-2 text-sm">
-      <span className="w-5 font-mono text-white/45">#{setNum}</span>
-      <span className="flex-1 font-mono">
-        <span className="text-white">{entry.w ?? '—'} kg</span>
-        <span className="text-white/45"> × </span>
-        <span className="text-white">{entry.r ?? '—'}</span>
-        <span className="text-white/45"> @ RIR </span>
-        <span className="text-white">{entry.rir ?? '—'}</span>
+    <li className="flex items-center gap-2 py-0.5">
+      <span className="w-6 font-mono text-sm text-white/45">#{setNum}</span>
+      <span className="flex-1 font-mono text-lg tabular-nums">
+        <span className="text-white font-semibold">{entry.w ?? '—'}</span>
+        <span className="text-white/45 text-sm"> kg × </span>
+        <span className="text-white font-semibold">{entry.r ?? '—'}</span>
+        <span className="text-white/45 text-sm"> @ RIR </span>
+        <span className="text-white font-semibold">{entry.rir ?? '—'}</span>
       </span>
       <button
         onClick={onDelete}

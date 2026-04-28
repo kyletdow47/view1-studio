@@ -134,8 +134,10 @@ export function TrainView() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <p className="font-mono text-xl font-semibold tabular-nums">{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-white/50">
+      <p className="font-mono text-3xl font-bold tabular-nums leading-none">
+        {value}
+      </p>
+      <p className="text-[10px] uppercase tracking-wider text-white/50 mt-1.5">
         {label}
       </p>
     </div>

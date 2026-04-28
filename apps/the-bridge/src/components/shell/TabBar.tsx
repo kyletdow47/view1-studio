@@ -74,10 +74,10 @@ export function TabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 glass-card mx-2 mb-2 rounded-2xl"
+      className="fixed bottom-0 inset-x-0 z-40 bg-black/55 backdrop-blur-2xl border-t border-white/10"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <ul className="flex items-stretch justify-around px-2 py-2">
+      <ul className="flex items-stretch justify-around px-2 py-1">
         {TABS.map((tab) => {
           const active = pathname?.startsWith(tab.href)
           return (
@@ -85,7 +85,7 @@ export function TabBar() {
               <Link
                 href={tab.href}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 py-1.5 rounded-md tap-target relative transition-colors',
+                  'flex flex-col items-center justify-center gap-1 py-2 rounded-md tap-target relative transition-colors',
                   active ? 'text-white' : 'text-white/55'
                 )}
               >
@@ -94,7 +94,7 @@ export function TabBar() {
                   {tab.label}
                 </span>
                 {active && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full rainbow-fill shadow-[0_0_12px_rgba(236,72,153,0.6)]" />
+                  <span className="absolute -top-px left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full rainbow-fill shadow-[0_0_12px_rgba(236,72,153,0.7)]" />
                 )}
               </Link>
             </li>

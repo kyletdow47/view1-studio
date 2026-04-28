@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { PROGRAM } from '@/data/program'
 import { SUPPLEMENTS } from '@/data/supplements'
 import { useSettings, useSupplementsTaken } from '@/db/hooks'
 import {
@@ -17,11 +18,12 @@ import { todayISO } from '@/lib/date-utils'
 import type { Backup } from '@/db/operations'
 import { cn } from '@/lib/cn'
 
-type Section = 'home' | 'supplements' | 'coaching' | 'settings' | 'install'
+type Section = 'home' | 'program' | 'supplements' | 'coaching' | 'settings' | 'install'
 
 export function MoreView() {
   const [section, setSection] = useState<Section>('home')
 
+  if (section === 'program') return <ProgramSection onBack={() => setSection('home')} />
   if (section === 'supplements') return <SupplementsSection onBack={() => setSection('home')} />
   if (section === 'coaching') return <CoachingSection onBack={() => setSection('home')} />
   if (section === 'settings') return <SettingsSection onBack={() => setSection('home')} />
@@ -33,12 +35,59 @@ export function MoreView() {
         <span className="rainbow-text">More</span>
       </h2>
 
+      <Tile label="Full program" hint="All 7 workout days at a glance" onClick={() => setSection('program')} />
       <Tile label="Supplements" hint="Daily check-off" onClick={() => setSection('supplements')} />
       <Tile label="Coaching reference" hint="Volume ramp, RIR, macros" onClick={() => setSection('coaching')} />
       <Tile label="Settings & targets" hint="Macros, weight goals, start date" onClick={() => setSection('settings')} />
       <Tile label="Install on phone" hint="Add to home screen" onClick={() => setSection('install')} />
 
       <BackupTile />
+    </div>
+  )
+}
+
+function ProgramSection({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="space-y-4 pt-1">
+      <BackButton onBack={onBack} />
+      <h2 className="font-display text-xl font-semibold tracking-tight">
+        Full <span className="rainbow-text">program</span>
+      </h2>
+      <p className="text-sm text-white/55">
+        7-day cycle. Repeats from Day 1 every Monday-equivalent.
+      </p>
+
+      <div className="space-y-3">
+        {PROGRAM.map((day, i) => (
+          <Card key={day.index} className="!p-4">
+            <div className="flex items-baseline justify-between mb-2">
+              <h3 className="font-display text-lg font-semibold">
+                Day {i + 1} · <span className="rainbow-text">{day.name}</span>
+              </h3>
+            </div>
+            <p className="text-xs text-white/55 mb-3">{day.focus}</p>
+            {day.exercises.length === 0 ? (
+              <p className="text-sm text-white/65 italic">No lifts scheduled.</p>
+            ) : (
+              <ul className="space-y-2">
+                {day.exercises.map((ex) => (
+                  <li
+                    key={ex.name}
+                    className="flex items-center justify-between gap-3 py-1.5 border-t border-white/8 first:border-t-0 first:pt-0"
+                  >
+                    <span className="text-sm font-medium leading-tight">
+                      {ex.name}
+                    </span>
+                    <span className="font-mono text-xs text-white/55 shrink-0">
+                      {ex.targetSets} × {ex.targetReps}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

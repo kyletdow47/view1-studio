@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { AppHeader } from '@/components/shell/AppHeader'
 import { TabBar } from '@/components/shell/TabBar'
 import { ToastProvider } from '@/components/ui/Toast'
 import './globals.css'
@@ -45,11 +44,17 @@ export default function RootLayout({
     >
       <body>
         <ToastProvider>
-          <div className="flex flex-col min-h-[100dvh] pt-[env(safe-area-inset-top)]">
-            <AppHeader />
-            <main className="flex-1 px-4 pb-32">{children}</main>
-            <TabBar />
-          </div>
+          <main
+            className="px-4"
+            style={{
+              paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+              paddingBottom: 'calc(env(safe-area-inset-bottom) + 88px)',
+              minHeight: '100dvh',
+            }}
+          >
+            {children}
+          </main>
+          <TabBar />
         </ToastProvider>
       </body>
     </html>
