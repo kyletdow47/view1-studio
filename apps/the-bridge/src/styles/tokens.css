@@ -1,0 +1,78 @@
+:root {
+  /* glass surface tokens — ascending opacity */
+  --glass-04: rgba(255, 255, 255, 0.04);
+  --glass-06: rgba(255, 255, 255, 0.06);
+  --glass-08: rgba(255, 255, 255, 0.08);
+  --glass-10: rgba(255, 255, 255, 0.10);
+  --glass-12: rgba(255, 255, 255, 0.12);
+  --glass-14: rgba(255, 255, 255, 0.14);
+  --glass-18: rgba(255, 255, 255, 0.18);
+  --glass-20: rgba(255, 255, 255, 0.20);
+  --glass-26: rgba(255, 255, 255, 0.26);
+
+  /* text opacity scale — descending */
+  --text-100: #ffffff;
+  --text-95: rgba(255, 255, 255, 0.95);
+  --text-80: rgba(255, 255, 255, 0.80);
+  --text-70: rgba(255, 255, 255, 0.70);
+  --text-60: rgba(255, 255, 255, 0.60);
+  --text-50: rgba(255, 255, 255, 0.50);
+  --text-40: rgba(255, 255, 255, 0.40);
+
+  /* rainbow accents */
+  --rainbow-1: #f59e0b; /* amber */
+  --rainbow-2: #ec4899; /* pink */
+  --rainbow-3: #a855f7; /* purple */
+  --rainbow-4: #3b82f6; /* blue */
+
+  /* radius scale */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 24px;
+  --r-pill: 999px;
+
+  /* gradients */
+  --rainbow-stroke-soft: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.30) 0%,
+    rgba(236, 72, 153, 0.25) 33%,
+    rgba(168, 85, 247, 0.25) 66%,
+    rgba(59, 130, 246, 0.30) 100%
+  );
+
+  --rainbow-stroke-bright: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.65) 0%,
+    rgba(236, 72, 153, 0.55) 33%,
+    rgba(168, 85, 247, 0.55) 66%,
+    rgba(59, 130, 246, 0.65) 100%
+  );
+
+  --rainbow-bright: linear-gradient(
+    135deg,
+    #f59e0b 0%,
+    #ec4899 50%,
+    #a855f7 100%
+  );
+
+  --rainbow-full: linear-gradient(
+    135deg,
+    #f59e0b 0%,
+    #ec4899 33%,
+    #a855f7 66%,
+    #3b82f6 100%
+  );
+
+  /* timing */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --d-fast: 150ms;
+  --d-base: 220ms;
+  --d-slow: 360ms;
+
+  /* iOS safe area helpers */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}

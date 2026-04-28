@@ -1,0 +1,19 @@
+{
+  "name": "The Bridge",
+  "short_name": "Bridge",
+  "description": "4-week gym + nutrition tracking",
+  "start_url": "/train",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a12",
+  "theme_color": "#0a0a12",
+  "categories": ["health", "fitness"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}

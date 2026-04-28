@@ -1,0 +1,108 @@
+import type { MealPreset } from '@/types'
+
+/**
+ * 11 meal presets from the user's Mediterranean weight-gain plan.
+ * Targets: 5 meals/day → ~3200 cal / 160g P / 400g C / 100g F.
+ * Macros are approximate — edit per-recipe if user logs their actual numbers.
+ */
+export const MEAL_PRESETS: MealPreset[] = [
+  {
+    id: 'breakfast-yogurt-protein',
+    name: 'Yogurt + protein bowl',
+    cal: 680,
+    p: 38,
+    c: 70,
+    f: 22,
+    type: 'breakfast',
+  },
+  {
+    id: 'breakfast-yogurt-ricotta',
+    name: 'Yogurt + ricotta + honey',
+    cal: 720,
+    p: 36,
+    c: 75,
+    f: 24,
+    type: 'breakfast',
+  },
+  {
+    id: 'breakfast-oatmeal-protein',
+    name: 'Oatmeal + protein + banana',
+    cal: 700,
+    p: 40,
+    c: 90,
+    f: 16,
+    type: 'breakfast',
+  },
+  {
+    id: 'smoothie-mass',
+    name: 'Mass smoothie',
+    cal: 600,
+    p: 42,
+    c: 70,
+    f: 18,
+    type: 'smoothie',
+  },
+  {
+    id: 'lunch-pasta-ragu',
+    name: 'Pasta al Ragù',
+    cal: 760,
+    p: 34,
+    c: 95,
+    f: 22,
+    type: 'lunch',
+  },
+  {
+    id: 'lunch-pasta-fagioli',
+    name: 'Pasta e Fagioli',
+    cal: 720,
+    p: 30,
+    c: 100,
+    f: 18,
+    type: 'lunch',
+  },
+  {
+    id: 'snack-4pm',
+    name: '4pm snack (toast + cheese)',
+    cal: 350,
+    p: 18,
+    c: 35,
+    f: 14,
+    type: 'snack',
+  },
+  {
+    id: 'dinner-pollo-diavola',
+    name: 'Pollo alla Diavola + rice',
+    cal: 950,
+    p: 50,
+    c: 80,
+    f: 30,
+    type: 'dinner',
+  },
+  {
+    id: 'dinner-bistecca',
+    name: 'Bistecca + potatoes',
+    cal: 1000,
+    p: 55,
+    c: 70,
+    f: 38,
+    type: 'dinner',
+  },
+  {
+    id: 'dinner-salmone',
+    name: 'Salmone + farro + verdure',
+    cal: 920,
+    p: 48,
+    c: 80,
+    f: 30,
+    type: 'dinner',
+  },
+  {
+    id: 'casein-prebed',
+    name: 'Greek yogurt + nuts (pre-bed)',
+    cal: 300,
+    p: 22,
+    c: 18,
+    f: 14,
+    type: 'casein',
+  },
+]
