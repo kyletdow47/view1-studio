@@ -71,6 +71,15 @@ export async function logSet(
     sets: [...e.sets, stamped],
   }))
 
+  // Stamp startedAt on the workout log the first time a real set lands.
+  if (set.r != null && set.r > 0) {
+    const db = getDB()
+    const log = await db.workoutLogs.get(date)
+    if (log && !log.startedAt) {
+      await db.workoutLogs.put({ ...log, startedAt: stamped.loggedAt })
+    }
+  }
+
   // PR check (only if both weight and reps are valid)
   if (
     stamped.w != null &&

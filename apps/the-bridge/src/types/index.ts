@@ -15,10 +15,40 @@ export const EXERCISE_CATEGORIES = [
 ] as const
 export type ExerciseCategory = (typeof EXERCISE_CATEGORIES)[number]
 
+/**
+ * 17 muscle groups used for analytics, the body heatmap, and the muscle
+ * library. Granular enough to show imbalances; coarse enough to be useful
+ * across all training styles.
+ */
+export const MUSCLES = [
+  'Quads',
+  'Hamstrings',
+  'Glutes',
+  'Calves',
+  'Chest',
+  'Lats',
+  'Upper Back',
+  'Lower Back',
+  'Traps',
+  'Front Delts',
+  'Side Delts',
+  'Rear Delts',
+  'Biceps',
+  'Triceps',
+  'Forearms',
+  'Abs',
+  'Obliques',
+] as const
+export type Muscle = (typeof MUSCLES)[number]
+
 export type ExerciseDef = {
   name: string
   priority: ExercisePriority
   category: ExerciseCategory
+  /** primary mover(s) — counted at 1.0x in volume math. Populated by getExerciseDef. */
+  primaryMuscles?: Muscle[]
+  /** secondary movers / synergists — counted at 0.5x in volume math. Populated by getExerciseDef. */
+  secondaryMuscles?: Muscle[]
   /** seconds — main: 150, secondary: 90, finisher: 60, cardio: 0 */
   restSec: number
   /** target set count */
@@ -84,6 +114,8 @@ export type WorkoutLog = {
   exercises: ExerciseLog[]
   /** per-date overrides of the scheduled day's exercises */
   swaps?: ExerciseSwap[]
+  /** ISO timestamp; set when the first set lands */
+  startedAt?: string
   /** ISO timestamp; set when user taps "Complete workout" */
   completedAt?: string
 }

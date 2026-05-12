@@ -1,4 +1,5 @@
 import type { ExerciseCategory, ExerciseDef } from '@/types'
+import { getMuscles } from './muscle-map'
 
 const yt = (q: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
@@ -787,14 +788,15 @@ export function exercisesByCategory(): Array<{
 
 /**
  * Lookup. Returns a fallback def for unknown names so the UI can render
- * historical entries even if the catalog changes.
+ * historical entries even if the catalog changes. Always merges in
+ * `primaryMuscles` + `secondaryMuscles` from the muscle-map side table.
  */
 export function getExerciseDef(name: string): ExerciseDef {
-  return (
+  const base =
     EXERCISES[name] ?? {
       name,
-      priority: 'secondary',
-      category: 'Other',
+      priority: 'secondary' as const,
+      category: 'Other' as ExerciseCategory,
       restSec: 90,
       targetSets: 3,
       targetReps: '8-12',
@@ -803,7 +805,8 @@ export function getExerciseDef(name: string): ExerciseDef {
       cues: [],
       videoSearchQuery: yt(`${name} form`),
     }
-  )
+  const muscles = getMuscles(name, base.category)
+  return { ...base, primaryMuscles: muscles.primary, secondaryMuscles: muscles.secondary }
 }
 
 export function searchExercises(query: string): ExerciseDef[] {

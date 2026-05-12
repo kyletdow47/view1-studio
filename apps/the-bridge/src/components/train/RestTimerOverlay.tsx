@@ -11,13 +11,14 @@ function fmt(sec: number): string {
 
 export function RestTimerOverlay() {
   const restTimer = useUIStore((s) => s.restTimer)
+  const remaining = useUIStore((s) => s.restRemaining)
   const adjust = useUIStore((s) => s.adjustRestTimer)
   const cancel = useUIStore((s) => s.cancelRestTimer)
 
   if (!restTimer) return null
 
-  const pct = restTimer.total > 0 ? (restTimer.remaining / restTimer.total) * 100 : 0
-  const lowTime = restTimer.remaining <= 10
+  const pct = restTimer.totalSec > 0 ? (remaining / restTimer.totalSec) * 100 : 0
+  const lowTime = remaining <= 10
 
   return (
     <div
@@ -42,7 +43,7 @@ export function RestTimerOverlay() {
             lowTime ? 'rainbow-text' : 'text-white'
           )}
         >
-          {fmt(restTimer.remaining)}
+          {fmt(remaining)}
         </span>
         <div className="grid grid-cols-2 gap-1.5">
           <button

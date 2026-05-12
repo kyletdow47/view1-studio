@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type {
   ExerciseDef,
   ExerciseLog,
@@ -21,6 +21,8 @@ import { relativeLabel } from '@/lib/date-utils'
 import { useUIStore } from '@/store/ui'
 import { cn } from '@/lib/cn'
 import { PlateCalcModal } from './PlateCalcModal'
+import { PRBurst } from './PRBurst'
+import type { PersonalRecord } from '@/types'
 
 type Props = {
   exercise: ExerciseDef
@@ -61,6 +63,10 @@ export function ExerciseCard({
   const [infoOpen, setInfoOpen] = useState(false)
   const [plateOpen, setPlateOpen] = useState(false)
   const [draft, setDraft] = useState<SetEntry>({ w: null, r: null, rir: null })
+  // Pre-fill weight: prefer last set from today, else first set from last session.
+  // Run once per (exercise, day) — don't clobber the user mid-edit.
+  const [prefillKey, setPrefillKey] = useState<string | null>(null)
+  const [prBurst, setPrBurst] = useState<PersonalRecord | null>(null)
   const { toast } = useToast()
   const startRestTimer = useUIStore((s) => s.startRestTimer)
   const pr = usePR(exercise.name)
@@ -72,6 +78,21 @@ export function ExerciseCard({
 
   const completedSets = log?.sets.filter((s) => s.r != null) ?? []
   const targetReached = completedSets.length >= exercise.targetSets
+
+  // Auto-pre-fill the weight field on a clean draft once per (date, exercise).
+  // Last set today wins, else the prior session's first set.
+  const key = `${date}:${exercise.name}`
+  useEffect(() => {
+    if (prefillKey === key) return
+    if (draft.w != null || draft.r != null || draft.rir != null) return
+    const lastToday = completedSets[completedSets.length - 1]
+    const seed = lastToday?.w ?? lastSession?.sets[0]?.w
+    if (seed != null) {
+      setDraft({ w: seed, r: null, rir: null })
+    }
+    setPrefillKey(key)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
   const [extraSetUnlocked, setExtraSetUnlocked] = useState(false)
   const showDraftRow = !targetReached || extraSetUnlocked
 
@@ -101,6 +122,7 @@ export function ExerciseCard({
     if (result.pr) {
       toast(`PR! ${result.pr.weight} kg × ${result.pr.reps}`, 'pr')
       navigator.vibrate?.([60, 40, 60, 40, 120])
+      setPrBurst(result.pr)
     }
   }
 
@@ -122,6 +144,26 @@ export function ExerciseCard({
           <p className="text-xs text-white/55 mt-0.5">
             {exercise.targetSets} × {exercise.targetReps} @ RIR {exercise.targetRIR}
           </p>
+          {(exercise.primaryMuscles?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {exercise.primaryMuscles?.map((m) => (
+                <span
+                  key={m}
+                  className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-pink-500/15 text-pink-200 border border-pink-500/30"
+                >
+                  {m}
+                </span>
+              ))}
+              {exercise.secondaryMuscles?.map((m) => (
+                <span
+                  key={m}
+                  className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-white/6 text-white/55 border border-white/10"
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-0.5 -mr-2">
           {onPair && !log?.pairedWith && (
@@ -267,12 +309,19 @@ export function ExerciseCard({
               key={i}
               setNum={i + 1}
               entry={s}
+              lastSessionSet={lastSession?.sets[i]}
               onDelete={() => deleteSet(date, exercise.name, i)}
             />
           ))}
         </ul>
       )}
 
+      {showDraftRow && (
+        <ProgressionHint
+          targetReps={exercise.targetReps}
+          lastSets={completedSets.length > 0 ? completedSets : lastSession?.sets}
+        />
+      )}
       {showDraftRow ? (
         <DraftSetRow
           setNum={(log?.sets.length ?? 0) + 1}
@@ -333,6 +382,8 @@ export function ExerciseCard({
           60
         }
       />
+
+      <PRBurst pr={prBurst} onDone={() => setPrBurst(null)} />
     </Card>
   )
 }
@@ -340,12 +391,25 @@ export function ExerciseCard({
 function SetRow({
   setNum,
   entry,
+  lastSessionSet,
   onDelete,
 }: {
   setNum: number
   entry: SetEntry
+  lastSessionSet?: SetEntry
   onDelete: () => void
 }) {
+  // Compute deltas vs last session's matching set number.
+  const wDelta =
+    entry.w != null && lastSessionSet?.w != null
+      ? entry.w - lastSessionSet.w
+      : null
+  const rDelta =
+    entry.r != null && lastSessionSet?.r != null
+      ? entry.r - lastSessionSet.r
+      : null
+  const hasDelta =
+    (wDelta != null && wDelta !== 0) || (rDelta != null && rDelta !== 0)
   return (
     <li className="flex items-center gap-2 py-0.5">
       <span className="w-6 font-mono text-sm text-white/45">#{setNum}</span>
@@ -356,6 +420,22 @@ function SetRow({
         <span className="text-white/45 text-sm"> @ RIR </span>
         <span className="text-white font-semibold">{entry.rir ?? '—'}</span>
       </span>
+      {hasDelta && (
+        <span className="text-[10px] font-mono tabular-nums shrink-0 flex flex-col items-end leading-none">
+          {wDelta != null && wDelta !== 0 && (
+            <span className={wDelta > 0 ? 'text-emerald-300' : 'text-amber-300'}>
+              {wDelta > 0 ? '+' : ''}
+              {wDelta}kg
+            </span>
+          )}
+          {rDelta != null && rDelta !== 0 && (
+            <span className={rDelta > 0 ? 'text-emerald-300' : 'text-amber-300'}>
+              {rDelta > 0 ? '+' : ''}
+              {rDelta}r
+            </span>
+          )}
+        </span>
+      )}
       <button
         onClick={onDelete}
         className="text-white/35 hover:text-red-300 tap-target -mr-2"
@@ -444,6 +524,40 @@ function NumInput({
   )
 }
 
+function ProgressionHint({
+  targetReps,
+  lastSets,
+}: {
+  targetReps: string
+  lastSets?: SetEntry[]
+}) {
+  if (!lastSets || lastSets.length === 0) return null
+  const last = lastSets[lastSets.length - 1]
+  if (last.w == null || last.r == null) return null
+
+  // Parse target rep range — e.g. "8-10" → max 10
+  const match = targetReps.match(/(\d+)\s*-\s*(\d+)/)
+  if (!match) return null
+  const topReps = parseInt(match[2], 10)
+
+  // Hit top of range with RIR ≥ 2 → time to add weight
+  const atTop = last.r >= topReps
+  const fresh = last.rir != null && last.rir >= 2
+
+  if (atTop && fresh) {
+    const bump = last.w >= 50 ? 2.5 : 1.25
+    return (
+      <div className="text-[11px] rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1.5 text-emerald-200">
+        <span className="font-semibold">Bump up:</span> last was {last.w}×{last.r} @ RIR{' '}
+        {last.rir} — try{' '}
+        <span className="font-mono">{last.w + bump} kg</span> this set.
+      </div>
+    )
+  }
+
+  return null
+}
+
 function LastSessionPanel({ lastSession }: { lastSession: import('@/lib/last-session').LastSession }) {
   const [open, setOpen] = useState(false)
   const first = lastSession.sets[0]
@@ -522,7 +636,8 @@ function ExerciseNotes({
         }}
         rows={2}
         placeholder="How did it feel?"
-        className="mt-2 w-full rounded-md bg-white/6 border border-white/10 p-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/25"
+        className="mt-2 w-full rounded-md bg-white/10 border border-white/15 p-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 caret-white"
+        style={{ color: 'white' }}
       />
     </details>
   )

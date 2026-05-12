@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { getExerciseDef } from '@/data/exercises'
 import { useAllWorkoutLogs, useSettings, useWorkoutLog } from '@/db/hooks'
+import { fmtDuration, useElapsed } from '@/lib/duration'
+import { computeSessionStats } from '@/lib/session-stats'
+import { flashbackLogs } from '@/lib/analytics'
+import { cn } from '@/lib/cn'
 import {
   pairSuperset,
   removeExerciseFromLog,
@@ -27,6 +31,7 @@ import { AddExerciseModal } from './AddExerciseModal'
 import { DayPills } from './DayPills'
 import { ExerciseCard } from './ExerciseCard'
 import { RestTimerOverlay } from './RestTimerOverlay'
+import { SessionSummaryModal } from './SessionSummaryModal'
 
 export function TrainView() {
   const settings = useSettings()
@@ -38,6 +43,7 @@ export function TrainView() {
   const [addOpen, setAddOpen] = useState(false)
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [pairSource, setPairSource] = useState<string | null>(null)
+  const [summaryOpen, setSummaryOpen] = useState(false)
 
   useEffect(() => {
     if (!selectedDate) setSelectedDate(todayISO())
@@ -81,11 +87,13 @@ export function TrainView() {
     return set
   }, [scheduledNames, extras])
 
-  const stats = useMemo(
-    () => computeStats(log, scheduledExercises.map((e) => e.def)),
-    [log, scheduledExercises]
-  )
+  const stats = useMemo(() => computeSessionStats(log), [log])
   const isCompleted = !!log?.completedAt
+  const elapsed = useElapsed(log?.startedAt, log?.completedAt)
+  const flashbacks = useMemo(
+    () => flashbackLogs(allLogs, selectedDate),
+    [allLogs, selectedDate]
+  )
 
   return (
     <div className="space-y-4 pt-1">
@@ -104,6 +112,27 @@ export function TrainView() {
             <p className="text-sm font-semibold">{streak.current}-day streak</p>
             <p className="text-[11px] text-white/55">Best: {streak.best}</p>
           </div>
+        </Card>
+      )}
+
+      {flashbacks.length > 0 && (
+        <Card className="!p-3 space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-white/55">
+            On this day
+          </p>
+          {flashbacks.map((f) => {
+            const exNames = f.log.exercises
+              .filter((e) => e.sets.some((s) => s.r != null && s.r > 0))
+              .map((e) => e.name)
+              .slice(0, 3)
+              .join(' · ')
+            return (
+              <p key={f.label} className="text-xs">
+                <span className="text-pink-300 font-semibold">{f.label}:</span>{' '}
+                <span className="text-white/75">{exNames || '—'}</span>
+              </p>
+            )
+          })}
         </Card>
       )}
 
@@ -149,20 +178,28 @@ export function TrainView() {
 
       {(day.exercises.length > 0 || extras.length > 0) && stats.sets > 0 && (
         <Card className="!p-3 space-y-2">
-          <div className="grid grid-cols-3 text-center">
+          <div className="grid grid-cols-4 text-center">
             <Stat label="Sets" value={stats.sets} />
             <Stat label="Reps" value={stats.reps} />
-            <Stat label="Volume kg" value={stats.volume} />
+            <Stat label="kg" value={stats.volume} />
+            <Stat label="Time" valueText={log?.startedAt ? fmtDuration(elapsed) : '—'} />
           </div>
           {stats.muscles.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-1 border-t border-white/8">
               {stats.muscles.map((m) => (
                 <span
-                  key={m.category}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-pill bg-white/8 text-white/75"
+                  key={m.muscle}
+                  className={cn(
+                    'text-[10px] font-medium px-2 py-0.5 rounded-pill',
+                    m.primary > 0
+                      ? 'bg-pink-500/15 text-pink-200 border border-pink-500/30'
+                      : 'bg-white/8 text-white/65'
+                  )}
                 >
-                  {m.category}{' '}
-                  <span className="text-white/45">×{m.sets}</span>
+                  {m.muscle}{' '}
+                  <span className="text-white/45 tabular-nums">
+                    ×{m.sets % 1 === 0 ? m.sets : m.sets.toFixed(1)}
+                  </span>
                 </span>
               ))}
             </div>
@@ -273,14 +310,28 @@ export function TrainView() {
       {(scheduledExercises.length > 0 || extras.length > 0) && stats.sets > 0 && (
         <Button
           onClick={async () => {
-            await setWorkoutCompleted(selectedDate, day.index, !isCompleted)
-            toast(isCompleted ? 'Workout reopened' : 'Workout complete 💪')
+            const next = !isCompleted
+            await setWorkoutCompleted(selectedDate, day.index, next)
+            if (next) {
+              setSummaryOpen(true)
+            } else {
+              toast('Workout reopened')
+            }
           }}
           variant={isCompleted ? 'ghost' : 'primary'}
           className="w-full"
         >
           {isCompleted ? 'Reopen workout' : 'Complete workout'}
         </Button>
+      )}
+
+      {isCompleted && (
+        <button
+          onClick={() => setSummaryOpen(true)}
+          className="w-full text-xs text-white/55 hover:text-white py-1"
+        >
+          View session summary →
+        </button>
       )}
 
       <AddExerciseModal
@@ -319,6 +370,13 @@ export function TrainView() {
       />
 
       <RestTimerOverlay />
+
+      <SessionSummaryModal
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        log={log}
+        settings={settings}
+      />
     </div>
   )
 }
@@ -367,11 +425,19 @@ function PairPickerModal({
   )
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({
+  label,
+  value,
+  valueText,
+}: {
+  label: string
+  value?: number
+  valueText?: string
+}) {
   return (
     <div>
-      <p className="font-mono text-3xl font-bold tabular-nums leading-none">
-        {value}
+      <p className="font-mono text-2xl font-bold tabular-nums leading-none">
+        {valueText ?? value}
       </p>
       <p className="text-[10px] uppercase tracking-wider text-white/50 mt-1.5">
         {label}
@@ -380,39 +446,3 @@ function Stat({ label, value }: { label: string; value: number }) {
   )
 }
 
-function computeStats(
-  log:
-    | {
-        exercises: {
-          name: string
-          sets: { w: number | null; r: number | null }[]
-        }[]
-      }
-    | null,
-  _scheduled: { name: string; category: string }[]
-) {
-  let sets = 0,
-    reps = 0,
-    volume = 0
-  const muscleSets = new Map<string, number>()
-  if (!log) return { sets, reps, volume, muscles: [] as { category: string; sets: number }[] }
-  for (const ex of log.exercises) {
-    let exerciseSets = 0
-    for (const s of ex.sets) {
-      if (s.r != null && s.r > 0) {
-        sets++
-        exerciseSets++
-        reps += s.r
-        if (s.w != null) volume += s.w * s.r
-      }
-    }
-    if (exerciseSets > 0) {
-      const cat = getExerciseDef(ex.name).category
-      muscleSets.set(cat, (muscleSets.get(cat) ?? 0) + exerciseSets)
-    }
-  }
-  const muscles = Array.from(muscleSets.entries())
-    .map(([category, sets]) => ({ category, sets }))
-    .sort((a, b) => b.sets - a.sets)
-  return { sets, reps, volume: Math.round(volume), muscles }
-}

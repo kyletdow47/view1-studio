@@ -13,7 +13,7 @@ type Tab = {
 const TABS: Tab[] = [
   {
     href: '/train',
-    label: 'Train',
+    label: 'Today',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14.4 14.4 9.6 9.6" />
@@ -25,34 +25,24 @@ const TABS: Tab[] = [
     ),
   },
   {
-    href: '/eat',
-    label: 'Eat',
+    href: '/library',
+    label: 'Library',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-        <path d="M7 2v20" />
-        <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+        <path d="M12 2a4 4 0 0 0-4 4v2a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Z" />
+        <path d="M12 12v10" />
+        <path d="M6 12c-2 0-3 1.5-3 4s1 4 3 4" />
+        <path d="M18 12c2 0 3 1.5 3 4s-1 4-3 4" />
       </svg>
     ),
   },
   {
-    href: '/weigh',
-    label: 'Weigh',
+    href: '/progress',
+    label: 'Progress',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="m16 9-4 4-2-2" />
-      </svg>
-    ),
-  },
-  {
-    href: '/shop',
-    label: 'Shop',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="8" cy="21" r="1" />
-        <circle cx="19" cy="21" r="1" />
-        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+        <path d="M3 3v18h18" />
+        <path d="m19 9-5 5-4-4-3 3" />
       </svg>
     ),
   },
