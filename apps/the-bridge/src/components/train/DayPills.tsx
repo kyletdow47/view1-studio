@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef } from 'react'
 import { cn } from '@/lib/cn'
 import { addDays, monthDayLabel, todayISO } from '@/lib/date-utils'
 import { getProgramDay } from '@/lib/program-day'
@@ -23,7 +22,6 @@ export function DayPills({
   back = 2,
 }: DayPillsProps) {
   const today = todayISO()
-  const dateInputRef = useRef<HTMLInputElement>(null)
   const days: string[] = []
   for (let i = -back; i < count - back; i++) {
     days.push(addDays(today, i))
@@ -32,13 +30,14 @@ export function DayPills({
 
   return (
     <div className="flex items-stretch gap-2">
-      <button
-        onClick={() => dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click()}
-        className="shrink-0 rounded-pill bg-white/6 border border-white/10 text-white/70 hover:text-white px-2.5 flex items-center justify-center"
-        aria-label="Jump to date"
+      {/* Native date input overlaid on a calendar icon. iOS opens its picker
+          on tap because the actual <input type="date"> sits invisibly on top
+          of the icon at full size. */}
+      <div
+        className="relative shrink-0 rounded-pill bg-white/6 border border-white/10 text-white/70 px-2.5 flex items-center justify-center min-w-[44px]"
         title="Jump to any date"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none">
           <rect x="3" y="4" width="18" height="18" rx="2" />
           <path d="M16 2v4" />
           <path d="M8 2v4" />
@@ -50,18 +49,17 @@ export function DayPills({
           <path d="M12 18h.01" />
         </svg>
         <input
-          ref={dateInputRef}
           type="date"
           value={selectedDate}
           max={today}
           onChange={(e) => {
             if (e.target.value) onSelect(e.target.value)
           }}
-          className="sr-only absolute w-0 h-0"
-          aria-hidden="true"
-          tabIndex={-1}
+          aria-label="Jump to date"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          style={{ colorScheme: 'dark' }}
         />
-      </button>
+      </div>
       <div
         className="flex gap-2 overflow-x-auto py-1 scroll-smooth flex-1"
         style={{ scrollbarWidth: 'none' }}
