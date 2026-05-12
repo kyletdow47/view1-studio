@@ -186,6 +186,13 @@ export type Settings = {
   goalWeight: number
   /** YYYY-MM-DD */
   startDate: string
+  /**
+   * URL of the user's Claude project that acts as their personal trainer.
+   * "Send to trainer" copies the markdown summary and opens this URL so they
+   * can paste straight into the project conversation.
+   * Example: https://claude.ai/project/abc123…
+   */
+  trainerProjectUrl?: string
 }
 
 export type PersonalRecord = {

@@ -22,6 +22,7 @@ import { todayISO } from '@/lib/date-utils'
 import type { Backup } from '@/db/operations'
 import { cn } from '@/lib/cn'
 import { formatSessionForTrainer } from '@/lib/trainer-export'
+import { sendSessionToTrainer } from '@/lib/send-to-trainer'
 
 type Section =
   | 'home'
@@ -48,7 +49,7 @@ export function MoreView() {
         <span className="rainbow-text">More</span>
       </h2>
 
-      <Tile label="Send to trainer" hint="Daily markdown export for your Claude project" onClick={() => setSection('trainer-export')} />
+      <Tile label="Send to trainer" hint="Copy session + open your Claude project" onClick={() => setSection('trainer-export')} />
       <Tile label="Full program" hint="All 7 workout days at a glance" onClick={() => setSection('program')} />
       <Tile label="Supplements" hint="Daily check-off" onClick={() => setSection('supplements')} />
       <Tile label="Coaching reference" hint="Volume ramp, RIR, macros" onClick={() => setSection('coaching')} />
@@ -376,6 +377,32 @@ function SettingsSection({ onBack }: { onBack: () => void }) {
         {field('startDate', 'Start date', 'date')}
       </Card>
 
+      <Card>
+        <h3 className="text-sm font-semibold mb-1">Trainer project</h3>
+        <p className="text-[11px] text-white/55 mb-3">
+          Paste the URL of the Claude project that coaches you. "Send to
+          trainer" will copy your session and open it in a new tab so you can
+          paste straight in.
+        </p>
+        <label className="block">
+          <span className="block text-xs text-white/55 mb-1">URL</span>
+          <input
+            type="url"
+            value={draft.trainerProjectUrl ?? ''}
+            onChange={(e) =>
+              setDraft((s) => ({ ...s, trainerProjectUrl: e.target.value }))
+            }
+            placeholder="https://claude.ai/project/…"
+            className="set-input w-full"
+            style={{ color: 'white' }}
+            inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </label>
+      </Card>
+
       <Button onClick={save} className="w-full">
         Save
       </Button>
@@ -445,6 +472,17 @@ function TrainerExportSection({ onBack }: { onBack: () => void }) {
     }
   }
 
+  async function sendToProject() {
+    const result = await sendSessionToTrainer(date, settings)
+    if (result.status === 'sent') {
+      toast('Copied — opening trainer project', 'success')
+    } else if (result.status === 'copied') {
+      toast(result.reason, 'success')
+    } else {
+      toast(`Failed: ${result.reason}`, 'error')
+    }
+  }
+
   return (
     <div className="space-y-4 pt-1">
       <BackButton onBack={onBack} />
@@ -467,8 +505,11 @@ function TrainerExportSection({ onBack }: { onBack: () => void }) {
             className="set-input w-full"
           />
         </label>
-        <Button onClick={generate} className="w-full" disabled={loading}>
-          {loading ? 'Generating…' : 'Generate'}
+        <Button onClick={sendToProject} className="w-full">
+          {settings.trainerProjectUrl ? 'Send to project' : 'Copy (set URL in Settings)'}
+        </Button>
+        <Button onClick={generate} variant="ghost" className="w-full" disabled={loading}>
+          {loading ? 'Generating…' : 'Preview markdown'}
         </Button>
       </Card>
 

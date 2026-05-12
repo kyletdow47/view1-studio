@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { computeSessionStats } from '@/lib/session-stats'
 import { fmtDuration } from '@/lib/duration'
-import { formatSessionForTrainer } from '@/lib/trainer-export'
-import { useAllPRs, useAllWeights } from '@/db/hooks'
-import { getMeals } from '@/db/operations'
+import { sendSessionToTrainer } from '@/lib/send-to-trainer'
+import { useAllPRs } from '@/db/hooks'
 import type { Settings, WorkoutLog } from '@/types'
 
 type Props = {
@@ -21,7 +20,6 @@ type Props = {
 export function SessionSummaryModal({ open, onClose, log, settings }: Props) {
   const stats = useMemo(() => computeSessionStats(log), [log])
   const prs = useAllPRs()
-  const weights = useAllWeights()
   const { toast } = useToast()
 
   const todayPRs = useMemo(
@@ -45,29 +43,14 @@ export function SessionSummaryModal({ open, onClose, log, settings }: Props) {
 
   async function share() {
     if (!log) return
-    const meals = await getMeals(log.date)
-    const weight = weights.find((w) => w.date === log.date) ?? null
-    const md = formatSessionForTrainer({
-      date: log.date,
-      startDate: settings.startDate,
-      log,
-      meals,
-      weight,
-      prs,
-    })
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Bridge ${log.date}`, text: md })
-        return
-      } catch {
-        /* user cancelled */
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(md)
-      toast('Copied to clipboard', 'success')
-    } catch {
-      toast('Share failed', 'error')
+    const result = await sendSessionToTrainer(log.date, settings)
+    if (result.status === 'sent') {
+      toast('Copied — opening trainer project', 'success')
+      onClose()
+    } else if (result.status === 'copied') {
+      toast(result.reason, 'success')
+    } else {
+      toast(`Failed: ${result.reason}`, 'error')
     }
   }
 
@@ -138,7 +121,7 @@ export function SessionSummaryModal({ open, onClose, log, settings }: Props) {
             Close
           </Button>
           <Button onClick={share} className="flex-1">
-            Send to trainer
+            {settings.trainerProjectUrl ? 'Send to trainer' : 'Copy summary'}
           </Button>
         </div>
       </div>

@@ -8,4 +8,5 @@ export const DEFAULT_SETTINGS: Settings = {
   startWeight: 58,
   goalWeight: 62,
   startDate: '2026-04-28',
+  trainerProjectUrl: '',
 }
