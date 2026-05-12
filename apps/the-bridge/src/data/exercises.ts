@@ -531,6 +531,23 @@ export const EXERCISES: Record<string, ExerciseDef> = {
     cues: ['Triceps flat on pad', 'Don’t fully lock elbows', 'Slow eccentric'],
     videoSearchQuery: yt('preacher curl form'),
   },
+  'Waiter Curl': {
+    name: 'Waiter Curl',
+    priority: 'secondary',
+    category: 'Biceps',
+    restSec: 75,
+    targetSets: 3,
+    targetReps: '10-12',
+    targetRIR: '1-2',
+    isBarbell: false,
+    cues: [
+      'Hold one DB by the top plate with both hands, palms up',
+      'Elbows pinned to ribs',
+      'Squeeze hard at the top, slow eccentric',
+    ],
+    commonErrors: ['Letting elbows drift forward', 'Swinging the weight'],
+    videoSearchQuery: yt('waiter curl dumbbell form'),
+  },
 
   // ---------- Triceps ----------
   'Tricep Pushdown': {

@@ -9,6 +9,10 @@ import { SUPPLEMENTS } from '@/data/supplements'
 import { useSettings, useSupplementsTaken } from '@/db/hooks'
 import {
   exportData,
+  getAllPRs,
+  getAllWeights,
+  getMeals,
+  getWorkoutLog,
   importData,
   importV3Backup,
   toggleSupplementTaken,
@@ -17,8 +21,16 @@ import {
 import { todayISO } from '@/lib/date-utils'
 import type { Backup } from '@/db/operations'
 import { cn } from '@/lib/cn'
+import { formatSessionForTrainer } from '@/lib/trainer-export'
 
-type Section = 'home' | 'program' | 'supplements' | 'coaching' | 'settings' | 'install'
+type Section =
+  | 'home'
+  | 'program'
+  | 'supplements'
+  | 'coaching'
+  | 'settings'
+  | 'install'
+  | 'trainer-export'
 
 export function MoreView() {
   const [section, setSection] = useState<Section>('home')
@@ -28,6 +40,7 @@ export function MoreView() {
   if (section === 'coaching') return <CoachingSection onBack={() => setSection('home')} />
   if (section === 'settings') return <SettingsSection onBack={() => setSection('home')} />
   if (section === 'install') return <InstallSection onBack={() => setSection('home')} />
+  if (section === 'trainer-export') return <TrainerExportSection onBack={() => setSection('home')} />
 
   return (
     <div className="space-y-3 pt-1">
@@ -35,6 +48,7 @@ export function MoreView() {
         <span className="rainbow-text">More</span>
       </h2>
 
+      <Tile label="Send to trainer" hint="Daily markdown export for your Claude project" onClick={() => setSection('trainer-export')} />
       <Tile label="Full program" hint="All 7 workout days at a glance" onClick={() => setSection('program')} />
       <Tile label="Supplements" hint="Daily check-off" onClick={() => setSection('supplements')} />
       <Tile label="Coaching reference" hint="Volume ramp, RIR, macros" onClick={() => setSection('coaching')} />
@@ -365,6 +379,117 @@ function SettingsSection({ onBack }: { onBack: () => void }) {
       <Button onClick={save} className="w-full">
         Save
       </Button>
+    </div>
+  )
+}
+
+function TrainerExportSection({ onBack }: { onBack: () => void }) {
+  const settings = useSettings()
+  const [date, setDate] = useState(todayISO())
+  const [markdown, setMarkdown] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+
+  async function generate() {
+    setLoading(true)
+    const [log, meals, weights, prs] = await Promise.all([
+      getWorkoutLog(date),
+      getMeals(date),
+      getAllWeights(),
+      getAllPRs(),
+    ])
+    const weight = weights.find((w) => w.date === date) ?? null
+    const md = formatSessionForTrainer({
+      date,
+      startDate: settings.startDate,
+      log,
+      meals,
+      weight,
+      prs,
+    })
+    setMarkdown(md)
+    setLoading(false)
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(markdown)
+      toast('Copied to clipboard', 'success')
+    } catch {
+      toast('Copy failed', 'error')
+    }
+  }
+
+  function download() {
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bridge-${date}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function share() {
+    if (!navigator.share) {
+      copy()
+      return
+    }
+    try {
+      await navigator.share({
+        title: `Bridge session ${date}`,
+        text: markdown,
+      })
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  return (
+    <div className="space-y-4 pt-1">
+      <BackButton onBack={onBack} />
+      <h2 className="font-display text-xl font-semibold tracking-tight">
+        Send to <span className="rainbow-text">trainer</span>
+      </h2>
+      <p className="text-sm text-white/65">
+        Generates a markdown summary of your session — lifts, sets, swaps,
+        nutrition, bodyweight, PRs — to paste into the Claude project that
+        coaches you.
+      </p>
+
+      <Card className="space-y-3">
+        <label>
+          <span className="block text-xs text-white/55 mb-1">Date</span>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="set-input w-full"
+          />
+        </label>
+        <Button onClick={generate} className="w-full" disabled={loading}>
+          {loading ? 'Generating…' : 'Generate'}
+        </Button>
+      </Card>
+
+      {markdown && (
+        <Card className="space-y-3">
+          <pre className="text-xs text-white/85 whitespace-pre-wrap break-words font-mono max-h-[40vh] overflow-y-auto bg-black/30 rounded-md p-3">
+            {markdown}
+          </pre>
+          <div className="flex gap-2">
+            <Button onClick={copy} variant="ghost" className="flex-1">
+              Copy
+            </Button>
+            <Button onClick={share} variant="ghost" className="flex-1">
+              Share
+            </Button>
+            <Button onClick={download} variant="ghost" className="flex-1">
+              Download
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }

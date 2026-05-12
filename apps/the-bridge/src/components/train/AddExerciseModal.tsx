@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
-import { searchExercises } from '@/data/exercises'
-import { addExerciseToLog } from '@/db/operations'
+import { searchExercises, getExerciseDef } from '@/data/exercises'
+import { addExerciseToLog, swapScheduledExercise } from '@/db/operations'
 import { EXERCISE_CATEGORIES, type ExerciseCategory, type ExerciseDef } from '@/types'
 import { cn } from '@/lib/cn'
 
@@ -14,6 +14,11 @@ type Props = {
   dayIndex: number
   /** names already in today's session — shown as "in session" and disabled */
   excludedNames: Set<string>
+  /** "add" inserts a new exercise; "swap" replaces a scheduled slot */
+  mode?: 'add' | 'swap'
+  /** when mode === "swap", the scheduled exercise being replaced */
+  swapOriginal?: string
+  onSwapDone?: (replacement: string) => void
 }
 
 export function AddExerciseModal({
@@ -22,24 +27,53 @@ export function AddExerciseModal({
   date,
   dayIndex,
   excludedNames,
+  mode = 'add',
+  swapOriginal,
+  onSwapDone,
 }: Props) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<ExerciseCategory | 'All'>('All')
 
+  // In swap mode, default the category filter to match the original.
+  const initialCategory: ExerciseCategory | 'All' = useMemo(() => {
+    if (mode === 'swap' && swapOriginal) {
+      return getExerciseDef(swapOriginal).category
+    }
+    return 'All'
+  }, [mode, swapOriginal])
+
+  // Reset category when the modal opens so the swap default applies fresh.
+  useMemo(() => {
+    if (open) setCategory(initialCategory)
+  }, [open, initialCategory])
+
   const filtered = useMemo(() => {
     let list = searchExercises(query)
     if (category !== 'All') list = list.filter((e) => e.category === category)
+    if (mode === 'swap' && swapOriginal) {
+      list = list.filter((e) => e.name !== swapOriginal)
+    }
     return list
-  }, [query, category])
+  }, [query, category, mode, swapOriginal])
 
   async function add(ex: ExerciseDef) {
+    if (mode === 'swap' && swapOriginal) {
+      await swapScheduledExercise(date, dayIndex, swapOriginal, ex.name)
+      setQuery('')
+      onSwapDone?.(ex.name)
+      return
+    }
     await addExerciseToLog(date, dayIndex, ex.name)
     setQuery('')
     onClose()
   }
 
+  const title = mode === 'swap'
+    ? `Swap ${swapOriginal ?? 'exercise'}`
+    : 'Add exercise'
+
   return (
-    <Modal open={open} onClose={onClose} title="Add exercise">
+    <Modal open={open} onClose={onClose} title={title}>
       <div className="space-y-3">
         <input
           value={query}

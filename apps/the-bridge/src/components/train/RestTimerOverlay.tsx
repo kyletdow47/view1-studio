@@ -35,25 +35,37 @@ export function RestTimerOverlay() {
           Skip
         </button>
       </div>
-      <div className="flex items-end justify-between mb-2">
+      <div className="flex items-end justify-between mb-2 gap-3">
         <span
           className={cn(
-            'font-mono text-5xl font-bold tabular-nums',
+            'font-mono text-5xl font-bold tabular-nums leading-none',
             lowTime ? 'rainbow-text' : 'text-white'
           )}
         >
           {fmt(restTimer.remaining)}
         </span>
-        <div className="flex gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => adjust(-30)}
+            className="bg-white/10 hover:bg-white/16 text-white text-xs font-semibold px-2.5 py-1.5 rounded-pill"
+          >
+            −30s
+          </button>
+          <button
+            onClick={() => adjust(30)}
+            className="bg-white/10 hover:bg-white/16 text-white text-xs font-semibold px-2.5 py-1.5 rounded-pill"
+          >
+            +30s
+          </button>
           <button
             onClick={() => adjust(-15)}
-            className="rainbow-bright-fill text-white text-xs font-semibold px-3 py-1.5 rounded-pill"
+            className="rainbow-bright-fill text-white text-xs font-semibold px-2.5 py-1.5 rounded-pill"
           >
             −15s
           </button>
           <button
             onClick={() => adjust(15)}
-            className="rainbow-bright-fill text-white text-xs font-semibold px-3 py-1.5 rounded-pill"
+            className="rainbow-bright-fill text-white text-xs font-semibold px-2.5 py-1.5 rounded-pill"
           >
             +15s
           </button>

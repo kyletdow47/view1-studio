@@ -133,6 +133,116 @@ export async function removeExerciseFromLog(
   await getDB().workoutLogs.put({ ...log, exercises })
 }
 
+/**
+ * Replace a scheduled exercise with another for this date only.
+ * Records an entry in `swaps` and drops any (empty) log entry for the original.
+ */
+export async function swapScheduledExercise(
+  date: string,
+  dayIndex: number,
+  original: string,
+  replacement: string
+): Promise<void> {
+  if (original === replacement) return
+  const db = getDB()
+  const existing = (await db.workoutLogs.get(date)) ?? {
+    date,
+    dayIndex,
+    exercises: [],
+  }
+  const swaps = (existing.swaps ?? []).filter((s) => s.original !== original)
+  swaps.push({ original, replacement })
+  const exercises = existing.exercises.filter((e) => e.name !== original)
+  await db.workoutLogs.put({ ...existing, exercises, swaps })
+}
+
+/** Undo a swap, restoring the original scheduled exercise. */
+export async function undoSwap(date: string, original: string): Promise<void> {
+  const log = await getDB().workoutLogs.get(date)
+  if (!log || !log.swaps) return
+  const swaps = log.swaps.filter((s) => s.original !== original)
+  await getDB().workoutLogs.put({ ...log, swaps })
+}
+
+/**
+ * Pair two exercises as a superset for this date. Creates empty exercise
+ * entries if either doesn't have a log row yet. Symmetric: both get a
+ * `pairedWith` reference to the other. Breaks any pre-existing pairings.
+ */
+export async function pairSuperset(
+  date: string,
+  dayIndex: number,
+  a: string,
+  b: string
+): Promise<void> {
+  if (a === b) return
+  const db = getDB()
+  const existing = (await db.workoutLogs.get(date)) ?? {
+    date,
+    dayIndex,
+    exercises: [],
+  }
+  // Drop any prior pairings involving a or b
+  const cleaned = existing.exercises.map((e) =>
+    e.name === a ||
+    e.name === b ||
+    e.pairedWith === a ||
+    e.pairedWith === b
+      ? { ...e, pairedWith: undefined }
+      : e
+  )
+  // Ensure both exist as entries
+  const ensure = (name: string, partner: string, list: ExerciseLog[]) => {
+    const idx = list.findIndex((x) => x.name === name)
+    if (idx >= 0) {
+      const next = [...list]
+      next[idx] = { ...next[idx], pairedWith: partner }
+      return next
+    }
+    return [...list, { name, sets: [], notes: '', pairedWith: partner }]
+  }
+  let exercises = ensure(a, b, cleaned)
+  exercises = ensure(b, a, exercises)
+  await db.workoutLogs.put({ ...existing, exercises })
+}
+
+/** Break the superset pairing on `exerciseName` (and its partner). */
+export async function unpairSuperset(
+  date: string,
+  exerciseName: string
+): Promise<void> {
+  const db = getDB()
+  const log = await db.workoutLogs.get(date)
+  if (!log) return
+  const idx = log.exercises.findIndex((e) => e.name === exerciseName)
+  if (idx < 0) return
+  const partner = log.exercises[idx].pairedWith
+  const exercises = log.exercises.map((e) =>
+    e.name === exerciseName || e.name === partner
+      ? { ...e, pairedWith: undefined }
+      : e
+  )
+  await db.workoutLogs.put({ ...log, exercises })
+}
+
+/** Mark today's workout complete (or undo if completedAt already set). */
+export async function setWorkoutCompleted(
+  date: string,
+  dayIndex: number,
+  completed: boolean
+): Promise<void> {
+  const db = getDB()
+  const existing = (await db.workoutLogs.get(date)) ?? {
+    date,
+    dayIndex,
+    exercises: [],
+  }
+  await db.workoutLogs.put({
+    ...existing,
+    completedAt: completed ? new Date().toISOString() : undefined,
+  })
+}
+
 export async function getAllWorkoutLogs(): Promise<WorkoutLog[]> {
   return getDB().workoutLogs.toArray()
 }

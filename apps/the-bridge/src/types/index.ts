@@ -67,12 +67,25 @@ export type ExerciseLog = {
   name: string
   sets: SetEntry[]
   notes: string
+  /** if set, this exercise is supersetted with `pairedWith` (and vice versa). */
+  pairedWith?: string
+}
+
+export type ExerciseSwap = {
+  /** scheduled exercise being replaced */
+  original: string
+  /** new exercise that takes its slot */
+  replacement: string
 }
 
 export type WorkoutLog = {
   date: string
   dayIndex: number
   exercises: ExerciseLog[]
+  /** per-date overrides of the scheduled day's exercises */
+  swaps?: ExerciseSwap[]
+  /** ISO timestamp; set when user taps "Complete workout" */
+  completedAt?: string
 }
 
 export type MealPresetType =
