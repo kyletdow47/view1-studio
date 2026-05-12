@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { computeSessionStats } from '@/lib/session-stats'
 import { fmtDuration } from '@/lib/duration'
 import { sendSessionToTrainer } from '@/lib/send-to-trainer'
+import { syncWorkoutToHealth } from '@/lib/health-sync'
 import { useAllPRs } from '@/db/hooks'
 import type { Settings, WorkoutLog } from '@/types'
 
@@ -116,12 +117,26 @@ export function SessionSummaryModal({ open, onClose, log, settings }: Props) {
           </div>
         )}
 
-        <div className="flex gap-2 pt-2">
-          <Button variant="ghost" onClick={onClose} className="flex-1">
-            Close
-          </Button>
-          <Button onClick={share} className="flex-1">
-            {settings.trainerProjectUrl ? 'Send to trainer' : 'Copy summary'}
+        <div className="space-y-2 pt-2">
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} className="flex-1">
+              Close
+            </Button>
+            <Button onClick={share} className="flex-1">
+              {settings.trainerProjectUrl ? 'Send to trainer' : 'Copy summary'}
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              const r = syncWorkoutToHealth(log)
+              if (r === 'no-data') {
+                toast('Workout has no start time yet', 'error')
+              }
+            }}
+            className="w-full text-xs"
+          >
+            ❤️ Log to Apple Health (requires Shortcut — see More)
           </Button>
         </div>
       </div>

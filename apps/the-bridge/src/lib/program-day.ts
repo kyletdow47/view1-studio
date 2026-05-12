@@ -16,8 +16,12 @@ export function getProgramDayIndex(startDate: string, queryDate: string): number
   return diff % 7
 }
 
-export function getProgramDay(startDate: string, queryDate: string): ProgramDay {
-  return PROGRAM[getProgramDayIndex(startDate, queryDate)]
+export function getProgramDay(
+  startDate: string,
+  queryDate: string,
+  program: ProgramDay[] = PROGRAM
+): ProgramDay {
+  return program[getProgramDayIndex(startDate, queryDate)]
 }
 
 export function daysUntilStart(startDate: string, queryDate: string): number {

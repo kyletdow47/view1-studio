@@ -6,13 +6,14 @@ import { cn } from '@/lib/cn'
 
 type Props = {
   logs: WorkoutLog[]
+  onDayTap?: (date: string) => void
 }
 
 /**
  * GitHub-style year heatmap: 53 columns × 7 rows. Each cell is one day,
  * colored by total set count that day.
  */
-export function YearHeatmap({ logs }: Props) {
+export function YearHeatmap({ logs, onDayTap }: Props) {
   const cells = useMemo(() => {
     const setsByDate = new Map<string, number>()
     for (const log of logs) {
@@ -69,13 +70,27 @@ export function YearHeatmap({ logs }: Props) {
         className="grid grid-flow-col gap-[2px]"
         style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}
       >
-        {cells.map((c) => (
-          <div
-            key={c.date}
-            className={cn('w-[9px] h-[9px] rounded-[2px]', TIER_CLASSES[tier(c.sets)])}
-            title={`${c.date}: ${c.sets} sets`}
-          />
-        ))}
+        {cells.map((c) => {
+          const cls = cn(
+            'w-[9px] h-[9px] rounded-[2px]',
+            TIER_CLASSES[tier(c.sets)]
+          )
+          return onDayTap && c.sets > 0 ? (
+            <button
+              key={c.date}
+              onClick={() => onDayTap(c.date)}
+              className={cn(cls, 'hover:ring-1 hover:ring-pink-300 cursor-pointer')}
+              title={`${c.date}: ${c.sets} sets — tap to view`}
+              aria-label={`Open session ${c.date}`}
+            />
+          ) : (
+            <div
+              key={c.date}
+              className={cls}
+              title={`${c.date}: ${c.sets} sets`}
+            />
+          )
+        })}
       </div>
       <div className="flex items-center justify-end gap-1 mt-2 text-[9px] text-white/55">
         <span>less</span>

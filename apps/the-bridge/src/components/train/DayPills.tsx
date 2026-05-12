@@ -3,6 +3,7 @@
 import { cn } from '@/lib/cn'
 import { addDays, monthDayLabel, todayISO } from '@/lib/date-utils'
 import { getProgramDay } from '@/lib/program-day'
+import type { ProgramDay } from '@/types'
 
 type DayPillsProps = {
   startDate: string
@@ -12,6 +13,8 @@ type DayPillsProps = {
   count?: number
   /** how many of those are in the past (default 2) */
   back?: number
+  /** optional active program override */
+  program?: ProgramDay[]
 }
 
 export function DayPills({
@@ -20,6 +23,7 @@ export function DayPills({
   onSelect,
   count = 7,
   back = 2,
+  program,
 }: DayPillsProps) {
   const today = todayISO()
   const days: string[] = []
@@ -68,7 +72,7 @@ export function DayPills({
           <Pill
             date={selectedDate}
             label={monthDayLabel(selectedDate)}
-            sub={getProgramDay(startDate, selectedDate).name}
+            sub={getProgramDay(startDate, selectedDate, program).name}
             isActive
             isToday={false}
             onSelect={onSelect}
@@ -77,7 +81,7 @@ export function DayPills({
         {days.map((date) => {
           const isActive = date === selectedDate
           const isToday = date === today
-          const day = getProgramDay(startDate, date)
+          const day = getProgramDay(startDate, date, program)
           return (
             <Pill
               key={date}

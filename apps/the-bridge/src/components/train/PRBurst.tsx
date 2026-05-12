@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { PersonalRecord } from '@/types'
+import { sharePRCard } from '@/lib/pr-card'
 
 type Props = {
   pr: PersonalRecord | null
@@ -15,14 +16,15 @@ type Props = {
  */
 export function PRBurst({ pr, onDone }: Props) {
   const [visible, setVisible] = useState(false)
+  const [sharing, setSharing] = useState(false)
   useEffect(() => {
     if (!pr) return
     setVisible(true)
+    // Auto-dismiss after a longer beat so the share affordance is reachable
     const t = setTimeout(() => {
       setVisible(false)
-      // give the fade-out a beat before resetting parent state
       setTimeout(onDone, 250)
-    }, 1600)
+    }, 3500)
     return () => clearTimeout(t)
   }, [pr, onDone])
 
@@ -45,7 +47,7 @@ export function PRBurst({ pr, onDone }: Props) {
       style={{ opacity: visible ? 1 : 0 }}
     >
       <div className="absolute inset-0 bg-pink-500/20 animate-pulse" />
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <div className="text-center">
           <p className="text-[10px] uppercase tracking-[0.3em] text-pink-200 font-bold animate-bounce">
             New PR
@@ -55,6 +57,21 @@ export function PRBurst({ pr, onDone }: Props) {
           </p>
           <p className="text-sm text-white/75 mt-1 font-mono">{pr.exerciseName}</p>
         </div>
+        <button
+          onClick={async (e) => {
+            e.stopPropagation()
+            if (sharing) return
+            setSharing(true)
+            try {
+              await sharePRCard(pr)
+            } finally {
+              setSharing(false)
+            }
+          }}
+          className="pointer-events-auto rainbow-bright-fill text-white font-semibold px-6 py-3 rounded-pill shadow-[0_8px_28px_rgba(236,72,153,0.55)] text-sm"
+        >
+          {sharing ? 'Generating…' : '📸 Share PR card'}
+        </button>
       </div>
       {pieces.map((p) => (
         <span

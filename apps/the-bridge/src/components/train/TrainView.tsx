@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { getExerciseDef } from '@/data/exercises'
+import { resolveActiveProgram } from '@/data/active-program'
 import { useAllWorkoutLogs, useSettings, useWorkoutLog } from '@/db/hooks'
 import { fmtDuration, useElapsed } from '@/lib/duration'
 import { useWakeLock } from '@/lib/wake-lock'
@@ -51,9 +52,10 @@ export function TrainView() {
     if (!selectedDate) setSelectedDate(todayISO())
   }, [selectedDate, setSelectedDate])
 
+  const activeProgram = useMemo(() => resolveActiveProgram(settings), [settings])
   const day = useMemo(
-    () => getProgramDay(settings.startDate, selectedDate),
-    [settings.startDate, selectedDate]
+    () => getProgramDay(settings.startDate, selectedDate, activeProgram),
+    [settings.startDate, selectedDate, activeProgram]
   )
   const dayNum = getDayNumber(settings.startDate, selectedDate)
   const weekNum = getWeekNumber(settings.startDate, selectedDate)
@@ -114,6 +116,7 @@ export function TrainView() {
         startDate={settings.startDate}
         selectedDate={selectedDate}
         onSelect={setSelectedDate}
+        program={activeProgram}
       />
 
       {streak.current >= 2 && (

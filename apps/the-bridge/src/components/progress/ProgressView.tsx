@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUIStore } from '@/store/ui'
 import { Card } from '@/components/ui/Card'
 import { useAllPRs, useAllWorkoutLogs } from '@/db/hooks'
 import {
@@ -15,6 +17,7 @@ import {
 } from '@/lib/analytics'
 import { calculateStreak } from '@/lib/streak'
 import { computeMilestones } from '@/lib/milestones'
+import { sharePRCard } from '@/lib/pr-card'
 import { todayISO } from '@/lib/date-utils'
 import { fmtDuration } from '@/lib/duration'
 import { getExerciseDef } from '@/data/exercises'
@@ -41,6 +44,8 @@ export function ProgressView() {
   const [focusMuscle, setFocusMuscle] = useState<Muscle | null>(null)
   const [filter, setFilter] = useState<MuscleFilter>('All')
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('last7')
+  const router = useRouter()
+  const setSelectedDate = useUIStore((s) => s.setSelectedDate)
 
   const lifetime = useMemo(() => computeLifetimeStats(logs), [logs])
   const streak = useMemo(() => calculateStreak(logs, todayISO()), [logs])
@@ -238,13 +243,13 @@ export function ProgressView() {
           <Card>
             <ul className="divide-y divide-white/8">
               {sorted.map((pr) => (
-                <li key={pr.exerciseName}>
+                <li key={pr.exerciseName} className="flex items-center gap-2 py-3">
                   <button
                     onClick={() => {
                       setFocusExercise(pr.exerciseName)
                       setSection('exercise')
                     }}
-                    className="w-full flex items-center justify-between py-3 text-left"
+                    className="flex-1 flex items-center justify-between text-left"
                   >
                     <span>
                       <p className="text-sm font-semibold leading-tight">
@@ -255,6 +260,18 @@ export function ProgressView() {
                     <span className="font-mono text-base font-semibold tabular-nums text-pink-300">
                       {pr.weight} kg × {pr.reps}
                     </span>
+                  </button>
+                  <button
+                    onClick={() => sharePRCard(pr)}
+                    aria-label="Share PR card"
+                    title="Share as image"
+                    className="text-white/45 hover:text-pink-300 tap-target -mr-1"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
                   </button>
                 </li>
               ))}
@@ -376,7 +393,13 @@ export function ProgressView() {
       {logs.length > 0 && (
         <Card>
           <h3 className="text-sm font-semibold mb-2">Year of training</h3>
-          <YearHeatmap logs={logs} />
+          <YearHeatmap
+            logs={logs}
+            onDayTap={(date) => {
+              setSelectedDate(date)
+              router.push('/train')
+            }}
+          />
         </Card>
       )}
 

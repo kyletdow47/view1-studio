@@ -205,6 +205,21 @@ export type Settings = {
    * Example: https://claude.ai/project/abc123…
    */
   trainerProjectUrl?: string
+  /**
+   * Custom 7-day program override. If present, replaces the default PROGRAM
+   * everywhere getProgramDay() is consulted. Exercises store only their
+   * `name` to keep the data thin — full ExerciseDef is looked up via
+   * `getExerciseDef` at read time so cue/video/muscle changes flow through.
+   */
+  customProgram?: CustomProgramDay[]
+}
+
+export type CustomProgramDay = {
+  index: number
+  name: string
+  focus: string
+  isRest: boolean
+  exerciseNames: string[]
 }
 
 export type PersonalRecord = {

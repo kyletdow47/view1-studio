@@ -1,10 +1,12 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { PROGRAM } from '@/data/program'
+import { resolveActiveProgram, toCustomShape } from '@/data/active-program'
+import { searchExercises } from '@/data/exercises'
 import { SUPPLEMENTS } from '@/data/supplements'
 import { useSettings, useSupplementsTaken } from '@/db/hooks'
 import {
@@ -20,6 +22,7 @@ import {
 } from '@/db/operations'
 import { todayISO } from '@/lib/date-utils'
 import type { Backup } from '@/db/operations'
+import type { CustomProgramDay } from '@/types'
 import { cn } from '@/lib/cn'
 import { formatSessionForTrainer } from '@/lib/trainer-export'
 import { sendSessionToTrainer } from '@/lib/send-to-trainer'
@@ -27,21 +30,25 @@ import { sendSessionToTrainer } from '@/lib/send-to-trainer'
 type Section =
   | 'home'
   | 'program'
+  | 'edit-program'
   | 'supplements'
   | 'coaching'
   | 'settings'
   | 'install'
   | 'trainer-export'
+  | 'health-sync'
 
 export function MoreView() {
   const [section, setSection] = useState<Section>('home')
 
   if (section === 'program') return <ProgramSection onBack={() => setSection('home')} />
+  if (section === 'edit-program') return <EditProgramSection onBack={() => setSection('home')} />
   if (section === 'supplements') return <SupplementsSection onBack={() => setSection('home')} />
   if (section === 'coaching') return <CoachingSection onBack={() => setSection('home')} />
   if (section === 'settings') return <SettingsSection onBack={() => setSection('home')} />
   if (section === 'install') return <InstallSection onBack={() => setSection('home')} />
   if (section === 'trainer-export') return <TrainerExportSection onBack={() => setSection('home')} />
+  if (section === 'health-sync') return <HealthSyncSection onBack={() => setSection('home')} />
 
   return (
     <div className="space-y-3 pt-1">
@@ -50,7 +57,9 @@ export function MoreView() {
       </h2>
 
       <Tile label="Send to trainer" hint="Copy session + open your Claude project" onClick={() => setSection('trainer-export')} />
+      <Tile label="Apple Health sync" hint="One-time iOS Shortcut setup, then auto-log workouts" onClick={() => setSection('health-sync')} />
       <Tile label="Full program" hint="All 7 workout days at a glance" onClick={() => setSection('program')} />
+      <Tile label="Edit program" hint="Customize exercises, days, focus" onClick={() => setSection('edit-program')} />
       <Tile label="Supplements" hint="Daily check-off" onClick={() => setSection('supplements')} />
       <Tile label="Coaching reference" hint="Volume ramp, RIR, macros" onClick={() => setSection('coaching')} />
       <Tile label="Settings & targets" hint="Macros, weight goals, start date" onClick={() => setSection('settings')} />
@@ -62,18 +71,27 @@ export function MoreView() {
 }
 
 function ProgramSection({ onBack }: { onBack: () => void }) {
+  const settings = useSettings()
+  const program = useMemo(() => resolveActiveProgram(settings), [settings])
+  const isCustom = !!settings.customProgram && settings.customProgram.length > 0
+
   return (
     <div className="space-y-4 pt-1">
       <BackButton onBack={onBack} />
       <h2 className="font-display text-xl font-semibold tracking-tight">
         Full <span className="rainbow-text">program</span>
+        {isCustom && (
+          <span className="ml-2 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-cyan-500/15 text-cyan-200 border border-cyan-500/30 align-middle">
+            Custom
+          </span>
+        )}
       </h2>
       <p className="text-sm text-white/55">
         7-day cycle. Repeats from Day 1 every Monday-equivalent.
       </p>
 
       <div className="space-y-3">
-        {PROGRAM.map((day, i) => (
+        {program.map((day, i) => (
           <Card key={day.index} className="!p-4">
             <div className="flex items-baseline justify-between mb-2">
               <h3 className="font-display text-lg font-semibold">
@@ -531,6 +549,371 @@ function TrainerExportSection({ onBack }: { onBack: () => void }) {
           </div>
         </Card>
       )}
+    </div>
+  )
+}
+
+function HealthSyncSection({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="space-y-4 pt-1">
+      <BackButton onBack={onBack} />
+      <h2 className="font-display text-xl font-semibold tracking-tight">
+        Apple <span className="rainbow-text">Health sync</span>
+      </h2>
+
+      <Card>
+        <p className="text-sm text-white/85">
+          Apple doesn't let websites write to HealthKit directly. The
+          workaround is a one-time iOS Shortcut that takes Bridge's workout
+          data and logs it into Health. 5 minutes of setup, then every
+          completed workout is one tap to Health.
+        </p>
+      </Card>
+
+      <Card>
+        <h3 className="text-sm font-semibold mb-2">Setup (one time)</h3>
+        <ol className="text-sm text-white/85 space-y-2 list-decimal pl-5">
+          <li>Open the Shortcuts app on your iPhone.</li>
+          <li>Tap the + in the top-right to create a new Shortcut.</li>
+          <li>Tap the rename area at the top and call it exactly{' '}
+            <span className="font-mono text-pink-300">Bridge Health</span>
+            {' '}— this name has to match.
+          </li>
+          <li>Add a <span className="font-mono">Get Dictionary from Input</span> action.</li>
+          <li>Add a <span className="font-mono">Log Workout</span> action.</li>
+          <li>
+            In the Log Workout action:
+            <ul className="list-disc pl-5 mt-1 space-y-1 text-white/75">
+              <li>Activity: <span className="font-mono">Functional Strength Training</span></li>
+              <li>Start: tap → "Dictionary Value" → key <span className="font-mono">start</span></li>
+              <li>End: tap → "Dictionary Value" → key <span className="font-mono">end</span></li>
+              <li>Total Energy: tap → "Dictionary Value" → key <span className="font-mono">kcal</span></li>
+            </ul>
+          </li>
+          <li>(Optional) Add a <span className="font-mono">Show Notification</span> with body "Logged to Health".</li>
+          <li>Tap Done in the top-right to save.</li>
+        </ol>
+      </Card>
+
+      <Card>
+        <h3 className="text-sm font-semibold mb-2">How it works after setup</h3>
+        <p className="text-sm text-white/85">
+          When you tap "Log to Apple Health" in the session summary, Bridge
+          opens the Shortcut and passes:
+        </p>
+        <pre className="mt-2 text-[11px] font-mono bg-black/40 rounded-md p-2 text-white/80 overflow-x-auto">
+{`{
+  "activityType": "functionalStrengthTraining",
+  "start": "2026-05-12T18:30:00.000Z",
+  "end":   "2026-05-12T19:25:00.000Z",
+  "durationMinutes": 55,
+  "kcal": 330,
+  "workingSets": 22,
+  "totalVolumeKg": 12450,
+  "notes": "22 working sets · 12450 kg moved"
+}`}
+        </pre>
+        <p className="text-[11px] text-white/55 mt-2">
+          kcal is an estimate based on duration × 6 — typical for moderate
+          resistance training.
+        </p>
+      </Card>
+
+      <Card>
+        <p className="text-xs text-white/55">
+          Skip this if it's not worth the setup. The trainer-export and
+          backup flows already capture everything; Health sync is purely
+          for activity-ring credit + showing up in the broader Health
+          dashboard.
+        </p>
+      </Card>
+    </div>
+  )
+}
+
+function EditProgramSection({ onBack }: { onBack: () => void }) {
+  const settings = useSettings()
+  const [draft, setDraft] = useState<CustomProgramDay[]>(() =>
+    settings.customProgram && settings.customProgram.length > 0
+      ? settings.customProgram
+      : toCustomShape(PROGRAM)
+  )
+  const [openDay, setOpenDay] = useState<number | null>(null)
+  const [addingTo, setAddingTo] = useState<number | null>(null)
+  const [exerciseSearch, setExerciseSearch] = useState('')
+  const { toast } = useToast()
+
+  async function save() {
+    await updateSettings({ customProgram: draft })
+    toast('Program saved', 'success')
+  }
+
+  async function resetToDefault() {
+    if (!confirm('Reset to the default program? Your custom edits will be lost.')) return
+    setDraft(toCustomShape(PROGRAM))
+    await updateSettings({ customProgram: undefined })
+    toast('Reset to default', 'success')
+  }
+
+  function patchDay(i: number, patch: Partial<CustomProgramDay>) {
+    setDraft((d) => d.map((day) => (day.index === i ? { ...day, ...patch } : day)))
+  }
+
+  function removeExercise(dayIdx: number, exName: string) {
+    patchDay(dayIdx, {
+      exerciseNames: draft
+        .find((d) => d.index === dayIdx)!
+        .exerciseNames.filter((n) => n !== exName),
+    })
+  }
+
+  function moveExercise(dayIdx: number, exName: string, dir: 'up' | 'down') {
+    const day = draft.find((d) => d.index === dayIdx)
+    if (!day) return
+    const i = day.exerciseNames.indexOf(exName)
+    const j = dir === 'up' ? i - 1 : i + 1
+    if (j < 0 || j >= day.exerciseNames.length) return
+    const next = [...day.exerciseNames]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    patchDay(dayIdx, { exerciseNames: next })
+  }
+
+  function addExercise(dayIdx: number, name: string) {
+    const day = draft.find((d) => d.index === dayIdx)
+    if (!day) return
+    if (day.exerciseNames.includes(name)) {
+      setAddingTo(null)
+      setExerciseSearch('')
+      return
+    }
+    patchDay(dayIdx, { exerciseNames: [...day.exerciseNames, name] })
+    setAddingTo(null)
+    setExerciseSearch('')
+  }
+
+  return (
+    <div className="space-y-4 pt-1">
+      <BackButton onBack={onBack} />
+      <h2 className="font-display text-xl font-semibold tracking-tight">
+        Edit <span className="rainbow-text">program</span>
+      </h2>
+      <p className="text-sm text-white/55">
+        Customize each day's exercises, name, or focus. Changes apply
+        immediately on Today and across all future sessions.
+      </p>
+
+      <div className="space-y-3">
+        {draft
+          .slice()
+          .sort((a, b) => a.index - b.index)
+          .map((day) => {
+            const isOpen = openDay === day.index
+            return (
+              <Card key={day.index} className="!p-3">
+                <button
+                  onClick={() => setOpenDay(isOpen ? null : day.index)}
+                  className="w-full flex items-center justify-between text-left"
+                >
+                  <div>
+                    <p className="font-display text-base font-semibold">
+                      Day {day.index + 1} ·{' '}
+                      <span className="rainbow-text">{day.name}</span>
+                    </p>
+                    <p className="text-xs text-white/55 mt-0.5">
+                      {day.focus} · {day.exerciseNames.length}{' '}
+                      {day.exerciseNames.length === 1 ? 'exercise' : 'exercises'}
+                    </p>
+                  </div>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={cn(
+                      'text-white/45 transition-transform',
+                      isOpen && 'rotate-180'
+                    )}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+
+                {isOpen && (
+                  <div className="mt-3 space-y-3 border-t border-white/8 pt-3">
+                    {/* Day name + focus */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <label>
+                        <span className="block text-[10px] uppercase tracking-wider text-white/55 mb-1">
+                          Name
+                        </span>
+                        <input
+                          value={day.name}
+                          onChange={(e) =>
+                            patchDay(day.index, { name: e.target.value })
+                          }
+                          className="set-input w-full"
+                          style={{ color: 'white' }}
+                        />
+                      </label>
+                      <label>
+                        <span className="block text-[10px] uppercase tracking-wider text-white/55 mb-1">
+                          Rest day?
+                        </span>
+                        <button
+                          onClick={() =>
+                            patchDay(day.index, { isRest: !day.isRest })
+                          }
+                          className={cn(
+                            'w-full h-[44px] rounded-md text-sm font-semibold transition-all',
+                            day.isRest
+                              ? 'bg-amber-500/20 text-amber-200 border border-amber-500/40'
+                              : 'bg-white/8 text-white/65 border border-white/12'
+                          )}
+                        >
+                          {day.isRest ? '✓ Rest day' : 'Lifting day'}
+                        </button>
+                      </label>
+                    </div>
+                    <label>
+                      <span className="block text-[10px] uppercase tracking-wider text-white/55 mb-1">
+                        Focus
+                      </span>
+                      <input
+                        value={day.focus}
+                        onChange={(e) =>
+                          patchDay(day.index, { focus: e.target.value })
+                        }
+                        className="set-input w-full"
+                        style={{ color: 'white' }}
+                      />
+                    </label>
+
+                    {/* Exercise list */}
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-white/55 mb-1">
+                        Exercises
+                      </p>
+                      {day.exerciseNames.length === 0 ? (
+                        <p className="text-sm text-white/55 italic py-2">
+                          No lifts scheduled.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {day.exerciseNames.map((name, idx) => (
+                            <li
+                              key={name}
+                              className="flex items-center gap-2 py-1.5"
+                            >
+                              <div className="flex flex-col">
+                                <button
+                                  onClick={() =>
+                                    moveExercise(day.index, name, 'up')
+                                  }
+                                  disabled={idx === 0}
+                                  className="text-white/45 hover:text-white disabled:opacity-25 disabled:pointer-events-none px-1"
+                                  aria-label="Move up"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m18 15-6-6-6 6" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    moveExercise(day.index, name, 'down')
+                                  }
+                                  disabled={idx === day.exerciseNames.length - 1}
+                                  className="text-white/45 hover:text-white disabled:opacity-25 disabled:pointer-events-none px-1"
+                                  aria-label="Move down"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m6 9 6 6 6-6" />
+                                  </svg>
+                                </button>
+                              </div>
+                              <span className="flex-1 text-sm">{name}</span>
+                              <button
+                                onClick={() => removeExercise(day.index, name)}
+                                className="text-white/35 hover:text-red-300 tap-target -mr-2"
+                                aria-label="Remove"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                  <path d="M18 6 6 18" />
+                                  <path d="m6 6 12 12" />
+                                </svg>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {addingTo === day.index ? (
+                        <div className="mt-2 space-y-1.5 rounded-md bg-white/4 p-2">
+                          <input
+                            value={exerciseSearch}
+                            onChange={(e) => setExerciseSearch(e.target.value)}
+                            placeholder="Search exercise…"
+                            autoFocus
+                            className="set-input w-full"
+                            style={{ color: 'white' }}
+                          />
+                          <ul className="max-h-[180px] overflow-y-auto">
+                            {searchExercises(exerciseSearch)
+                              .filter((e) => !day.exerciseNames.includes(e.name))
+                              .slice(0, 30)
+                              .map((e) => (
+                                <li key={e.name}>
+                                  <button
+                                    onClick={() =>
+                                      addExercise(day.index, e.name)
+                                    }
+                                    className="w-full flex items-center justify-between gap-2 py-1.5 px-1 text-left hover:bg-white/6 rounded-sm"
+                                  >
+                                    <span className="text-sm">{e.name}</span>
+                                    <span className="text-[10px] text-white/55">
+                                      {e.category}
+                                    </span>
+                                  </button>
+                                </li>
+                              ))}
+                          </ul>
+                          <button
+                            onClick={() => {
+                              setAddingTo(null)
+                              setExerciseSearch('')
+                            }}
+                            className="text-[11px] text-white/55 hover:text-white"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingTo(day.index)}
+                          className="mt-2 w-full text-xs font-medium text-pink-300 hover:text-pink-200 py-1.5 rounded-md bg-pink-500/8 border border-pink-500/25"
+                        >
+                          + Add exercise
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Button variant="ghost" onClick={resetToDefault} className="flex-1">
+          Reset to default
+        </Button>
+        <Button onClick={save} className="flex-1">
+          Save program
+        </Button>
+      </div>
     </div>
   )
 }
