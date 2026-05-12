@@ -17,9 +17,14 @@ import { computeMilestones } from '@/lib/milestones'
 import { todayISO } from '@/lib/date-utils'
 import { fmtDuration } from '@/lib/duration'
 import { getExerciseDef } from '@/data/exercises'
-import { MUSCLES, type Muscle } from '@/types'
+import { type Muscle } from '@/types'
 import { cn } from '@/lib/cn'
-import { BodyHeatmap } from './BodyHeatmap'
+import {
+  BodyHeatmap,
+  FilterChips,
+  musclesForFilter,
+  type MuscleFilter,
+} from './BodyHeatmap'
 import { YearHeatmap } from './YearHeatmap'
 import { ExerciseChart } from './ExerciseChart'
 
@@ -31,6 +36,7 @@ export function ProgressView() {
   const [section, setSection] = useState<Section>('home')
   const [focusExercise, setFocusExercise] = useState<string | null>(null)
   const [focusMuscle, setFocusMuscle] = useState<Muscle | null>(null)
+  const [filter, setFilter] = useState<MuscleFilter>('All')
 
   const lifetime = useMemo(() => computeLifetimeStats(logs), [logs])
   const streak = useMemo(() => calculateStreak(logs, todayISO()), [logs])
@@ -280,8 +286,8 @@ export function ProgressView() {
       {/* Body heatmap (this week) */}
       <Card className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <h3 className="text-sm font-semibold">Muscles this week</h3>
-          <span className="text-[10px] text-white/45">trailing 7 days</span>
+          <h3 className="text-sm font-semibold">Sets per muscle</h3>
+          <span className="text-[10px] text-white/45">last 7 days</span>
         </div>
         <BodyHeatmap
           volumeByMuscle={weekVolume}
@@ -290,31 +296,16 @@ export function ProgressView() {
             setSection('muscle')
           }}
         />
-        <div className="flex flex-wrap gap-1 pt-2 border-t border-white/8">
-          {MUSCLES.map((m) => {
-            const v = weekVolume.get(m) ?? 0
-            const cold = (daysSince.get(m) ?? 999) > 7
-            return (
-              <button
-                key={m}
-                onClick={() => {
-                  setFocusMuscle(m)
-                  setSection('muscle')
-                }}
-                className={cn(
-                  'text-[10px] px-2 py-0.5 rounded-pill tabular-nums',
-                  v > 0
-                    ? 'bg-pink-500/15 text-pink-200 border border-pink-500/30'
-                    : cold
-                    ? 'bg-amber-500/10 text-amber-300/85 border border-amber-500/25'
-                    : 'bg-white/6 text-white/55'
-                )}
-              >
-                {m} <span className="opacity-60">×{v % 1 === 0 ? v : v.toFixed(1)}</span>
-              </button>
-            )
-          })}
-        </div>
+        <FilterChips value={filter} onChange={setFilter} />
+        <MuscleTargetList
+          muscles={musclesForFilter(filter)}
+          volume={weekVolume}
+          daysSince={daysSince}
+          onTap={(m) => {
+            setFocusMuscle(m)
+            setSection('muscle')
+          }}
+        />
       </Card>
 
       {/* Volume per muscle — last 4 weeks */}
@@ -469,6 +460,115 @@ export function ProgressView() {
       )}
     </div>
   )
+}
+
+/**
+ * Weekly-target list shown below the body diagram. Each muscle has a target
+ * range (low → high "growth window"); we show "X of Y weekly sets · N to growth"
+ * Hypertrophy lit follows ~10-20 sets/muscle/week for most groups.
+ */
+const WEEKLY_TARGETS: Record<string, { min: number; max: number }> = {
+  Quads: { min: 10, max: 20 },
+  Hamstrings: { min: 8, max: 16 },
+  Glutes: { min: 8, max: 16 },
+  Calves: { min: 8, max: 16 },
+  Chest: { min: 10, max: 20 },
+  Lats: { min: 10, max: 20 },
+  'Upper Back': { min: 10, max: 20 },
+  'Lower Back': { min: 4, max: 8 },
+  Traps: { min: 6, max: 12 },
+  'Front Delts': { min: 6, max: 12 },
+  'Side Delts': { min: 10, max: 20 },
+  'Rear Delts': { min: 10, max: 20 },
+  Biceps: { min: 10, max: 20 },
+  Triceps: { min: 8, max: 16 },
+  Forearms: { min: 4, max: 8 },
+  Abs: { min: 8, max: 16 },
+  Obliques: { min: 4, max: 8 },
+}
+
+function MuscleTargetList({
+  muscles,
+  volume,
+  daysSince,
+  onTap,
+}: {
+  muscles: Muscle[]
+  volume: Map<Muscle, number>
+  daysSince: Map<Muscle, number>
+  onTap: (m: Muscle) => void
+}) {
+  // Sort: most-trained first, untouched-but-due last
+  const rows = muscles
+    .map((m) => {
+      const sets = volume.get(m) ?? 0
+      const target = WEEKLY_TARGETS[m] ?? { min: 8, max: 16 }
+      const ds = daysSince.get(m)
+      return { muscle: m, sets, target, daysSince: ds }
+    })
+    .sort((a, b) => b.sets - a.sets)
+
+  return (
+    <ul className="space-y-1.5 pt-2 border-t border-white/8">
+      {rows.map((r) => {
+        const pct = Math.min(1, r.sets / r.target.max)
+        const inWindow = r.sets >= r.target.min
+        const toGrowth = Math.max(0, r.target.min - r.sets)
+        const overshoot = r.sets > r.target.max
+        return (
+          <li key={r.muscle}>
+            <button
+              onClick={() => onTap(r.muscle)}
+              className="w-full text-left flex flex-col gap-1 py-1 px-1"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm font-semibold">{r.muscle}</span>
+                <span className="text-[11px] text-white/55 font-mono tabular-nums">
+                  {fmtSets(r.sets)} of {r.target.min}–{r.target.max} weekly sets
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full transition-all',
+                    overshoot
+                      ? 'bg-amber-400'
+                      : inWindow
+                      ? 'rainbow-fill'
+                      : 'bg-pink-500/70'
+                  )}
+                  style={{ width: `${pct * 100}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-white/55">
+                {r.sets === 0 ? (
+                  r.daysSince != null && r.daysSince > 7 ? (
+                    <span className="text-amber-300">
+                      Untouched · {r.daysSince}d ago
+                    </span>
+                  ) : (
+                    <span>Not trained this week</span>
+                  )
+                ) : overshoot ? (
+                  <span>
+                    Above growth window ({r.sets - r.target.max} over) — recovery check
+                  </span>
+                ) : inWindow ? (
+                  <span className="text-emerald-300">In growth window</span>
+                ) : (
+                  <span>{fmtSets(toGrowth)} sets to growth window</span>
+                )}
+              </p>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function fmtSets(n: number): string {
+  return n % 1 === 0 ? `${n}` : n.toFixed(1)
 }
 
 function Stat({
