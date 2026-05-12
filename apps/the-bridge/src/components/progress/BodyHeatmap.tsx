@@ -67,14 +67,15 @@ const LIB_TO_OURS: Record<LibMuscle, Muscle[]> = (() => {
   return m as Record<LibMuscle, Muscle[]>
 })()
 
-// Color ramp: 0 sets = body color, then 5 tiers from soft → bright pink.
-const BODY_COLOR = 'rgba(255,255,255,0.10)'
+// Color ramp with neon-pink → magenta hot palette. The lib paints these
+// straight into fill; we add a glow filter via CSS on top.
+const BODY_COLOR = '#1a1a22'
 const RAMP = [
-  'rgba(236, 72, 153, 0.25)',
-  'rgba(236, 72, 153, 0.45)',
-  'rgba(236, 72, 153, 0.65)',
-  'rgba(236, 72, 153, 0.82)',
-  'rgba(236, 72, 153, 1)',
+  '#ec489940', // dim
+  '#ec489970',
+  '#f472b6',
+  '#ec4899',
+  '#f43f5e',
 ]
 
 export function BodyHeatmap({ volumeByMuscle, onMuscleTap }: Props) {
@@ -89,8 +90,7 @@ export function BodyHeatmap({ volumeByMuscle, onMuscleTap }: Props) {
       }
     })
     const max = Math.max(1, ...Array.from(libVol.values()))
-    const entries: { name: string; muscles: LibMuscle[]; frequency: number }[] =
-      []
+    const entries: { name: string; muscles: LibMuscle[]; frequency: number }[] = []
     libVol.forEach((vol, lib) => {
       if (vol <= 0) return
       const t = vol / max
@@ -111,37 +111,79 @@ export function BodyHeatmap({ volumeByMuscle, onMuscleTap }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <FigureCard title="Front">
-        <Model
-          data={data}
-          type="anterior"
-          bodyColor={BODY_COLOR}
-          highlightedColors={RAMP}
-          onClick={handleClick as any}
-          style={{ width: '100%', padding: 0 }}
-          svgStyle={{ width: '100%', height: 'auto' }}
-        />
-      </FigureCard>
-      <FigureCard title="Back">
-        <Model
-          data={data}
-          type="posterior"
-          bodyColor={BODY_COLOR}
-          highlightedColors={RAMP}
-          onClick={handleClick as any}
-          style={{ width: '100%', padding: 0 }}
-          svgStyle={{ width: '100%', height: 'auto' }}
-        />
-      </FigureCard>
+    <div className="body-heatmap relative">
+      {/* Radial spotlight behind both figures */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse 80% 70% at 50% 45%, rgba(236,72,153,0.10), transparent 65%)',
+        }}
+      />
+      <div className="grid grid-cols-2 gap-1 relative">
+        <FigureCard title="Front">
+          <Model
+            data={data}
+            type="anterior"
+            bodyColor={BODY_COLOR}
+            highlightedColors={RAMP}
+            onClick={handleClick as any}
+            style={{ width: '100%', padding: 0 }}
+            svgStyle={{ width: '100%', height: 'auto' }}
+          />
+        </FigureCard>
+        <FigureCard title="Back">
+          <Model
+            data={data}
+            type="posterior"
+            bodyColor={BODY_COLOR}
+            highlightedColors={RAMP}
+            onClick={handleClick as any}
+            style={{ width: '100%', padding: 0 }}
+            svgStyle={{ width: '100%', height: 'auto' }}
+          />
+        </FigureCard>
+      </div>
+      {/* Heavy SVG dressing: cleaner stroke contrast, drop-shadow on the
+          whole body, glow on highlighted muscles. */}
+      <style jsx global>{`
+        .body-heatmap svg {
+          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
+        }
+        .body-heatmap svg path,
+        .body-heatmap svg polygon {
+          stroke: rgba(0, 0, 0, 0.55);
+          stroke-width: 0.6;
+          transition: filter 200ms ease, fill 200ms ease;
+        }
+        .body-heatmap svg path[fill='${RAMP[0]}'],
+        .body-heatmap svg path[fill='${RAMP[1]}'],
+        .body-heatmap svg path[fill='${RAMP[2]}'],
+        .body-heatmap svg path[fill='${RAMP[3]}'],
+        .body-heatmap svg path[fill='${RAMP[4]}'] {
+          filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.85));
+        }
+        .body-heatmap svg path[fill='${RAMP[3]}'],
+        .body-heatmap svg path[fill='${RAMP[4]}'] {
+          filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.95))
+            drop-shadow(0 0 22px rgba(236, 72, 153, 0.6));
+        }
+      `}</style>
     </div>
   )
 }
 
-function FigureCard({ title, children }: { title: string; children: React.ReactNode }) {
+function FigureCard({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
   return (
-    <div className="glass-card p-2">
-      <p className="text-[10px] uppercase tracking-wider text-white/55 text-center mb-1">
+    <div className="rounded-2xl bg-gradient-to-b from-black/40 via-black/20 to-black/40 border border-white/10 p-2 backdrop-blur-sm">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-white/55 text-center mb-1 font-semibold">
         {title}
       </p>
       {children}
@@ -151,7 +193,14 @@ function FigureCard({ title, children }: { title: string; children: React.ReactN
 
 // ---------- Filter chip helpers used by ProgressView ----------
 
-export const MUSCLE_FILTERS = ['All', 'Upper', 'Arms', 'Back', 'Legs', 'Core'] as const
+export const MUSCLE_FILTERS = [
+  'All',
+  'Upper',
+  'Arms',
+  'Back',
+  'Legs',
+  'Core',
+] as const
 export type MuscleFilter = (typeof MUSCLE_FILTERS)[number]
 
 const FILTER_MUSCLES: Record<MuscleFilter, Muscle[]> = {
@@ -178,7 +227,7 @@ const FILTER_MUSCLES: Record<MuscleFilter, Muscle[]> = {
   Arms: ['Biceps', 'Triceps', 'Forearms'],
   Back: ['Lats', 'Upper Back', 'Lower Back', 'Traps'],
   Legs: ['Quads', 'Hamstrings', 'Glutes', 'Calves'],
-  Core: ['Abs', 'Obliques'],
+  Core: ['Abs', 'Obliques', 'Lower Back'],
 }
 
 export function musclesForFilter(f: MuscleFilter): Muscle[] {
@@ -193,15 +242,18 @@ export function FilterChips({
   onChange: (f: MuscleFilter) => void
 }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 py-1" style={{ scrollbarWidth: 'none' }}>
+    <div
+      className="flex gap-1.5 overflow-x-auto -mx-1 px-1 py-1"
+      style={{ scrollbarWidth: 'none' }}
+    >
       {MUSCLE_FILTERS.map((f) => (
         <button
           key={f}
           onClick={() => onChange(f)}
           className={cn(
-            'shrink-0 px-3 py-1 rounded-pill text-xs font-medium whitespace-nowrap transition-all',
+            'shrink-0 px-3 py-1.5 rounded-pill text-xs font-semibold whitespace-nowrap transition-all',
             value === f
-              ? 'bg-white text-black'
+              ? 'bg-white text-black shadow-[0_4px_14px_rgba(255,255,255,0.25)]'
               : 'bg-white/8 text-white/70 hover:bg-white/14'
           )}
         >
@@ -212,3 +264,47 @@ export function FilterChips({
   )
 }
 
+// ---------- "Last 7 days" / "Predict" toggle ----------
+
+export type HeatmapMode = 'last7' | 'predict'
+
+export function HeatmapModeToggle({
+  value,
+  onChange,
+}: {
+  value: HeatmapMode
+  onChange: (v: HeatmapMode) => void
+}) {
+  return (
+    <div className="inline-flex items-center bg-white/8 rounded-pill p-0.5">
+      <ToggleBtn active={value === 'last7'} onClick={() => onChange('last7')}>
+        Last 7 days
+      </ToggleBtn>
+      <ToggleBtn active={value === 'predict'} onClick={() => onChange('predict')}>
+        Predict
+      </ToggleBtn>
+    </div>
+  )
+}
+
+function ToggleBtn({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'text-xs font-semibold px-3 py-1.5 rounded-pill transition-all whitespace-nowrap',
+        active ? 'bg-white text-black shadow-sm' : 'text-white/65 hover:text-white'
+      )}
+    >
+      {children}
+    </button>
+  )
+}

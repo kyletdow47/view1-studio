@@ -8,6 +8,7 @@ import {
   computeLifetimeStats,
   daysSinceMuscle,
   muscleVolumeWindow,
+  predictedWeekVolume,
   recentSessionsFor,
   sortPRs,
   weeklyMuscleVolume,
@@ -22,7 +23,9 @@ import { cn } from '@/lib/cn'
 import {
   BodyHeatmap,
   FilterChips,
+  HeatmapModeToggle,
   musclesForFilter,
+  type HeatmapMode,
   type MuscleFilter,
 } from './BodyHeatmap'
 import { YearHeatmap } from './YearHeatmap'
@@ -37,6 +40,7 @@ export function ProgressView() {
   const [focusExercise, setFocusExercise] = useState<string | null>(null)
   const [focusMuscle, setFocusMuscle] = useState<Muscle | null>(null)
   const [filter, setFilter] = useState<MuscleFilter>('All')
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('last7')
 
   const lifetime = useMemo(() => computeLifetimeStats(logs), [logs])
   const streak = useMemo(() => calculateStreak(logs, todayISO()), [logs])
@@ -46,6 +50,11 @@ export function ProgressView() {
     () => muscleVolumeWindow(logs, 7, todayISO()),
     [logs]
   )
+  const predictedVolume = useMemo(
+    () => predictedWeekVolume(logs, todayISO()),
+    [logs]
+  )
+  const displayedVolume = heatmapMode === 'predict' ? predictedVolume : weekVolume
   const monthVolume = useMemo(
     () => muscleVolumeWindow(logs, 28, todayISO()),
     [logs]
@@ -283,14 +292,18 @@ export function ProgressView() {
         )}
       </Card>
 
-      {/* Body heatmap (this week) */}
-      <Card className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-sm font-semibold">Sets per muscle</h3>
-          <span className="text-[10px] text-white/45">last 7 days</span>
+      {/* Body heatmap (this week / predict) */}
+      <Card className="space-y-3 !p-3">
+        <div className="flex items-center justify-center">
+          <HeatmapModeToggle value={heatmapMode} onChange={setHeatmapMode} />
         </div>
+        <p className="text-center text-xs text-white/60">
+          {heatmapMode === 'last7'
+            ? 'Number of sets per muscle in the last 7 days'
+            : 'Projected end-of-week volume at your current pace'}
+        </p>
         <BodyHeatmap
-          volumeByMuscle={weekVolume}
+          volumeByMuscle={displayedVolume}
           onMuscleTap={(m) => {
             setFocusMuscle(m)
             setSection('muscle')
@@ -299,12 +312,13 @@ export function ProgressView() {
         <FilterChips value={filter} onChange={setFilter} />
         <MuscleTargetList
           muscles={musclesForFilter(filter)}
-          volume={weekVolume}
+          volume={displayedVolume}
           daysSince={daysSince}
           onTap={(m) => {
             setFocusMuscle(m)
             setSection('muscle')
           }}
+          showProjection={heatmapMode === 'predict'}
         />
       </Card>
 
@@ -492,11 +506,13 @@ function MuscleTargetList({
   volume,
   daysSince,
   onTap,
+  showProjection = false,
 }: {
   muscles: Muscle[]
   volume: Map<Muscle, number>
   daysSince: Map<Muscle, number>
   onTap: (m: Muscle) => void
+  showProjection?: boolean
 }) {
   // Sort: most-trained first, untouched-but-due last
   const rows = muscles
@@ -524,7 +540,7 @@ function MuscleTargetList({
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-semibold">{r.muscle}</span>
                 <span className="text-[11px] text-white/55 font-mono tabular-nums">
-                  {fmtSets(r.sets)} of {r.target.min}–{r.target.max} weekly sets
+                  {showProjection ? '~' : ''}{fmtSets(r.sets)} of {r.target.min}–{r.target.max} weekly sets
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">

@@ -208,6 +208,62 @@ export function muscleVolumeWindow(
   return out
 }
 
+/**
+ * Predicts each muscle's end-of-week volume based on the current week's pace.
+ * Uses (days_into_week + 1) so a Wednesday with 6 sets predicts 6 × 7/3 = 14.
+ * If we're past the user's typical training cadence (no logs yet this week),
+ * falls back to the trailing 4-week average for that muscle.
+ */
+export function predictedWeekVolume(
+  logs: WorkoutLog[],
+  asOf: string
+): Map<Muscle, number> {
+  const weekStart = startOfWeek(asOf)
+  const elapsedMs =
+    new Date(asOf + 'T00:00:00').getTime() -
+    new Date(weekStart + 'T00:00:00').getTime()
+  const elapsedDays = Math.max(1, Math.floor(elapsedMs / 86_400_000) + 1)
+
+  // This week's volume so far
+  const thisWeek = new Map<Muscle, number>()
+  for (const log of logs) {
+    if (log.date < weekStart || log.date > asOf) continue
+    for (const ex of log.exercises) {
+      const def = getExerciseDef(ex.name)
+      const sets = ex.sets.filter((s) => s.r != null && s.r > 0).length
+      if (sets === 0) continue
+      for (const m of def.primaryMuscles ?? []) {
+        thisWeek.set(m, (thisWeek.get(m) ?? 0) + sets)
+      }
+      for (const m of def.secondaryMuscles ?? []) {
+        thisWeek.set(m, (thisWeek.get(m) ?? 0) + sets * 0.5)
+      }
+    }
+  }
+
+  // Trailing 4-week per-muscle average (excluding this week)
+  const trailing28 = muscleVolumeWindow(logs, 28, weekStart)
+  const trailingAvg = new Map<Muscle, number>()
+  trailing28.forEach((v, m) => trailingAvg.set(m, v / 4))
+
+  const out = new Map<Muscle, number>()
+  const allMuscles = new Set<Muscle>([
+    ...Array.from(thisWeek.keys()),
+    ...Array.from(trailingAvg.keys()),
+  ])
+  allMuscles.forEach((m) => {
+    const so_far = thisWeek.get(m) ?? 0
+    const projection = (so_far / elapsedDays) * 7
+    const avg = trailingAvg.get(m) ?? 0
+    // Blend: if very early in week or no work yet, lean on trailing avg.
+    // After Wed, mostly trust pace.
+    const weight = Math.min(1, elapsedDays / 5)
+    const blended = projection * weight + avg * (1 - weight)
+    if (blended > 0) out.set(m, Math.round(blended * 10) / 10)
+  })
+  return out
+}
+
 /** Days since each muscle was last hit (any sets). null = never. */
 export function daysSinceMuscle(
   logs: WorkoutLog[],

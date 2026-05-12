@@ -146,6 +146,30 @@ export const MUSCLE_MAP: Record<
   'Cable Crunch': { primary: ['Abs'] },
   Plank: { primary: ['Abs'], secondary: ['Obliques'] },
   'Ab Wheel Rollout': { primary: ['Abs'], secondary: ['Lats'] },
+  'Russian Twist': { primary: ['Obliques'], secondary: ['Abs'] },
+  'Side Plank': { primary: ['Obliques'], secondary: ['Abs'] },
+  'Pallof Press': { primary: ['Obliques'], secondary: ['Abs'] },
+  'Cable Wood Chop': { primary: ['Obliques'], secondary: ['Abs'] },
+  'Hanging Side-to-Side Leg Raise': {
+    primary: ['Obliques', 'Abs'],
+    secondary: ['Forearms'],
+  },
+
+  // Lower Back
+  'Back Extension': {
+    primary: ['Lower Back'],
+    secondary: ['Glutes', 'Hamstrings'],
+  },
+  'Reverse Hyperextension': {
+    primary: ['Lower Back', 'Glutes'],
+    secondary: ['Hamstrings'],
+  },
+  'Good Morning': {
+    primary: ['Hamstrings', 'Lower Back'],
+    secondary: ['Glutes'],
+  },
+  'Bird Dog': { primary: ['Lower Back'], secondary: ['Glutes', 'Abs'] },
+  'Superman Hold': { primary: ['Lower Back'], secondary: ['Glutes'] },
 
   // ---------- Cardio (count primary as Quads — the dominant mover for most cardio) ----------
   'Stair Climber': { primary: ['Quads'], secondary: ['Glutes', 'Calves'] },
