@@ -23,6 +23,7 @@ import { useUIStore } from '@/store/ui'
 import { cn } from '@/lib/cn'
 import { PlateCalcModal } from './PlateCalcModal'
 import { PRBurst } from './PRBurst'
+import { NumberPad } from './NumberPad'
 import type { PersonalRecord } from '@/types'
 
 type Props = {
@@ -45,6 +46,10 @@ type Props = {
   onPair?: () => void
   /** removes the current pairing */
   onUnpair?: () => void
+  /** reorder controls; only present for scheduled exercises */
+  canMoveUp?: boolean
+  canMoveDown?: boolean
+  onMove?: (dir: 'up' | 'down') => void
 }
 
 export function ExerciseCard({
@@ -60,6 +65,9 @@ export function ExerciseCard({
   onUndoSwap,
   onPair,
   onUnpair,
+  canMoveUp,
+  canMoveDown,
+  onMove,
 }: Props) {
   const [infoOpen, setInfoOpen] = useState(false)
   const [plateOpen, setPlateOpen] = useState(false)
@@ -167,6 +175,32 @@ export function ExerciseCard({
           )}
         </div>
         <div className="flex items-center gap-0.5 -mr-2">
+          {onMove && (canMoveUp || canMoveDown) && (
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => onMove('up')}
+                disabled={!canMoveUp}
+                className="text-white/45 hover:text-white disabled:opacity-25 disabled:pointer-events-none px-1"
+                aria-label="Move up"
+                title="Move up"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m18 15-6-6-6 6" />
+                </svg>
+              </button>
+              <button
+                onClick={() => onMove('down')}
+                disabled={!canMoveDown}
+                className="text-white/45 hover:text-white disabled:opacity-25 disabled:pointer-events-none px-1"
+                aria-label="Move down"
+                title="Move down"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+            </div>
+          )}
           {onPair && !log?.pairedWith && (
             <button
               onClick={onPair}
@@ -304,17 +338,37 @@ export function ExerciseCard({
       {lastSession && <LastSessionPanel lastSession={lastSession} />}
 
       {completedSets.length > 0 && (
-        <ul className="space-y-1.5">
-          {log?.sets.map((s, i) => (
-            <SetRow
-              key={i}
-              setNum={i + 1}
-              entry={s}
-              lastSessionSet={lastSession?.sets[i]}
-              onDelete={() => deleteSet(date, exercise.name, i)}
-              onUpdate={(patch) => updateSet(date, exercise.name, i, patch)}
-            />
-          ))}
+        <ul className="space-y-1">
+          {log?.sets.map((s, i) => {
+            const prev = i > 0 ? log.sets[i - 1] : null
+            const restSec =
+              prev?.loggedAt && s.loggedAt
+                ? Math.max(
+                    0,
+                    Math.round(
+                      (new Date(s.loggedAt).getTime() -
+                        new Date(prev.loggedAt).getTime()) /
+                        1000
+                    )
+                  )
+                : null
+            return (
+              <div key={i}>
+                {restSec != null && restSec > 0 && restSec < 3600 && (
+                  <p className="text-[10px] text-white/40 font-mono pl-7 leading-tight py-0.5">
+                    ↻ {fmtRest(restSec)}
+                  </p>
+                )}
+                <SetRow
+                  setNum={i + 1}
+                  entry={s}
+                  lastSessionSet={lastSession?.sets[i]}
+                  onDelete={() => deleteSet(date, exercise.name, i)}
+                  onUpdate={(patch) => updateSet(date, exercise.name, i, patch)}
+                />
+              </div>
+            )
+          })}
         </ul>
       )}
 
@@ -446,7 +500,12 @@ function SetRow({
           />
           <button
             onClick={() => {
-              onUpdate?.({ w: draft.w, r: draft.r, rir: draft.rir })
+              onUpdate?.({
+                w: draft.w,
+                r: draft.r,
+                rir: draft.rir,
+                warmup: draft.warmup,
+              })
               setEditing(false)
             }}
             className="h-[52px] rounded-md font-semibold rainbow-bright-fill text-white"
@@ -455,22 +514,46 @@ function SetRow({
             ✓
           </button>
         </div>
-        <button
-          onClick={() => {
-            setDraft(entry)
-            setEditing(false)
-          }}
-          className="text-[11px] text-white/55 hover:text-white"
-        >
-          Cancel
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setDraft({ ...draft, warmup: !draft.warmup })}
+            className={cn(
+              'text-[11px] font-medium px-2 py-1 rounded-md transition-all',
+              draft.warmup
+                ? 'bg-amber-500/20 text-amber-200 border border-amber-500/40'
+                : 'bg-white/6 text-white/55 border border-white/10'
+            )}
+          >
+            {draft.warmup ? '✓ Warmup' : 'Warmup'}
+          </button>
+          <button
+            onClick={() => {
+              setDraft(entry)
+              setEditing(false)
+            }}
+            className="text-[11px] text-white/55 hover:text-white"
+          >
+            Cancel
+          </button>
+        </div>
       </li>
     )
   }
 
   return (
-    <li className="flex items-center gap-2 py-0.5">
-      <span className="w-6 font-mono text-sm text-white/45">#{setNum}</span>
+    <li className={cn('flex items-center gap-2 py-0.5', entry.warmup && 'opacity-60')}>
+      <span className="w-6 font-mono text-sm text-white/45 flex items-center gap-0.5">
+        {entry.warmup ? (
+          <span
+            className="text-[9px] font-bold px-1 py-0.5 rounded-sm bg-amber-500/25 text-amber-200 border border-amber-500/40"
+            title="Warmup set — excluded from PRs and totals"
+          >
+            W
+          </span>
+        ) : (
+          <>#{setNum}</>
+        )}
+      </span>
       <button
         onClick={() => {
           if (!onUpdate) return
@@ -539,6 +622,13 @@ function DraftSetRow({
   const weightRef = useRef<HTMLInputElement>(null)
   const repsRef = useRef<HTMLInputElement>(null)
   const rirRef = useRef<HTMLInputElement>(null)
+  const [focused, setFocused] = useState<'w' | 'r' | 'rir' | null>(null)
+  // Auto-dismiss pad when the draft empties (typically after a successful commit).
+  useEffect(() => {
+    if (draft.w == null && draft.r == null && draft.rir == null) {
+      setFocused(null)
+    }
+  }, [draft.w, draft.r, draft.rir])
 
   // PR proximity: if current draft tonnage is within striking distance of
   // the existing PR (same reps) — flag it so the user knows they're close.
@@ -569,28 +659,25 @@ function DraftSetRow({
           inputRef={weightRef}
           placeholder="kg"
           value={draft.w}
-          enterKeyHint="next"
+          isFocused={focused === 'w'}
+          onFocusField={() => setFocused('w')}
           onChange={(v) => onChange({ ...draft, w: v })}
-          onEnter={() => repsRef.current?.focus()}
         />
         <NumInput
           inputRef={repsRef}
           placeholder="reps"
           value={draft.r}
-          enterKeyHint="next"
+          isFocused={focused === 'r'}
+          onFocusField={() => setFocused('r')}
           onChange={(v) => onChange({ ...draft, r: v })}
-          onEnter={() => rirRef.current?.focus()}
         />
         <NumInput
           inputRef={rirRef}
           placeholder="RIR"
           value={draft.rir}
-          enterKeyHint="done"
+          isFocused={focused === 'rir'}
+          onFocusField={() => setFocused('rir')}
           onChange={(v) => onChange({ ...draft, rir: v })}
-          onEnter={() => {
-            rirRef.current?.blur()
-            if (filled) onCommit()
-          }}
         />
         <button
           onClick={onCommit}
@@ -636,10 +723,22 @@ function DraftSetRow({
         >
           +5
         </button>
+        <button
+          onClick={() => onChange({ ...draft, warmup: !draft.warmup })}
+          className={cn(
+            'text-[11px] font-semibold px-2.5 py-1 rounded-md transition-all ml-auto',
+            draft.warmup
+              ? 'bg-amber-500/20 text-amber-200 border border-amber-500/40'
+              : 'bg-white/8 text-white/65 border border-white/12'
+          )}
+          title="Mark this set as warmup — won't count toward PRs or totals"
+        >
+          {draft.warmup ? '✓ Warmup' : 'Warmup'}
+        </button>
         {prevSet && prevSet.w != null && (
           <button
             onClick={repeatLastSet}
-            className="text-[11px] font-medium text-cyan-200 hover:text-cyan-100 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30 ml-auto"
+            className="text-[11px] font-medium text-cyan-200 hover:text-cyan-100 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30"
             title="Pre-fill same weight/reps/RIR as last set"
           >
             ↻ Same as last
@@ -658,6 +757,36 @@ function DraftSetRow({
           {prHint === 'PR territory' ? '🔥 PR territory — send it' : `${prHint}`}
         </p>
       )}
+
+      {focused && (
+        <NumberPad
+          fieldLabel={focused === 'w' ? 'WEIGHT (kg)' : focused === 'r' ? 'REPS' : 'RIR'}
+          value={
+            focused === 'w' ? draft.w : focused === 'r' ? draft.r : draft.rir
+          }
+          decimal={focused === 'w'}
+          mode={focused === 'rir' ? 'done' : 'next'}
+          onChange={(v) => {
+            if (focused === 'w') onChange({ ...draft, w: v })
+            else if (focused === 'r') onChange({ ...draft, r: v })
+            else onChange({ ...draft, rir: v })
+          }}
+          onNext={() => {
+            if (focused === 'w') {
+              setFocused('r')
+              repsRef.current?.focus()
+            } else if (focused === 'r') {
+              setFocused('rir')
+              rirRef.current?.focus()
+            }
+          }}
+          onDone={() => {
+            setFocused(null)
+            if (filled) onCommit()
+          }}
+          onClose={() => setFocused(null)}
+        />
+      )}
     </div>
   )
 }
@@ -667,37 +796,44 @@ function NumInput({
   value,
   onChange,
   inputRef,
-  enterKeyHint,
-  onEnter,
+  isFocused,
+  onFocusField,
 }: {
   placeholder: string
   value: number | null
   onChange: (v: number | null) => void
   inputRef?: React.Ref<HTMLInputElement>
-  enterKeyHint?: 'next' | 'done' | 'go' | 'search' | 'send' | 'enter'
-  onEnter?: () => void
+  /** parent-tracked focus — drives the visible ring and pad target */
+  isFocused?: boolean
+  /** when provided, this input opens the in-app NumberPad instead of the
+   *  native keyboard. When omitted, behaves as a normal native number input. */
+  onFocusField?: () => void
 }) {
+  const usePad = onFocusField !== undefined
   return (
     <input
       ref={inputRef}
-      type="number"
-      inputMode="decimal"
-      enterKeyHint={enterKeyHint}
+      type={usePad ? 'text' : 'number'}
+      inputMode={usePad ? 'none' : 'decimal'}
+      readOnly={usePad}
       placeholder={placeholder}
       value={value ?? ''}
       onChange={(e) => {
+        if (usePad) return // value flows from the pad
         const raw = e.target.value
         if (raw === '') return onChange(null)
         const n = Number(raw)
         onChange(Number.isFinite(n) ? n : null)
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          onEnter?.()
-        }
-      }}
-      className={cn('set-input w-full', value != null && 'filled')}
+      onFocus={() => onFocusField?.()}
+      onClick={() => onFocusField?.()}
+      className={cn(
+        'set-input w-full',
+        value != null && 'filled',
+        usePad && 'caret-transparent cursor-pointer',
+        isFocused && 'ring-2 ring-pink-400/60'
+      )}
+      style={{ color: 'white' }}
     />
   )
 }
@@ -734,6 +870,13 @@ function ProgressionHint({
   }
 
   return null
+}
+
+function fmtRest(sec: number): string {
+  if (sec < 60) return `${sec}s rest`
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return s === 0 ? `${m}m rest` : `${m}m ${s}s rest`
 }
 
 function LastSessionPanel({ lastSession }: { lastSession: import('@/lib/last-session').LastSession }) {

@@ -14,6 +14,7 @@ import { cn } from '@/lib/cn'
 import {
   pairSuperset,
   removeExerciseFromLog,
+  setExerciseOrder,
   setWorkoutCompleted,
   undoSwap,
   unpairSuperset,
@@ -63,15 +64,24 @@ export function TrainView() {
     [allLogs]
   )
 
-  // Resolve scheduled exercises with per-date swap overrides.
+  // Resolve scheduled exercises with per-date swap overrides + reorder.
   const scheduledExercises = useMemo(() => {
     const swaps = log?.swaps ?? []
-    return day.exercises.map((e) => {
+    const base = day.exercises.map((e) => {
       const swap = swaps.find((s) => s.original === e.name)
       if (!swap) return { def: e, swappedFrom: null as string | null }
       return { def: getExerciseDef(swap.replacement), swappedFrom: e.name }
     })
-  }, [day.exercises, log?.swaps])
+    const order = log?.exerciseOrder
+    if (!order || order.length === 0) return base
+    const idx: Record<string, number> = {}
+    order.forEach((name, i) => (idx[name] = i))
+    return [...base].sort((a, b) => {
+      const ai = idx[a.def.name] ?? 1e6
+      const bi = idx[b.def.name] ?? 1e6
+      return ai - bi
+    })
+  }, [day.exercises, log?.swaps, log?.exerciseOrder])
 
   const scheduledNames = useMemo(
     () => new Set(scheduledExercises.map((e) => e.def.name)),
@@ -213,7 +223,7 @@ export function TrainView() {
       {/* Scheduled exercises (with per-date swaps applied) */}
       {!day.isRest && scheduledExercises.length > 0 && (
         <div className="space-y-3">
-          {scheduledExercises.map(({ def, swappedFrom }) => {
+          {scheduledExercises.map(({ def, swappedFrom }, idx) => {
             const exLog = log?.exercises.find((x) => x.name === def.name)
             const partnerLog = exLog?.pairedWith
               ? log?.exercises.find((x) => x.name === exLog.pairedWith)
@@ -241,6 +251,15 @@ export function TrainView() {
                 onUnpair={async () => {
                   await unpairSuperset(selectedDate, def.name)
                   toast('Superset broken')
+                }}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < scheduledExercises.length - 1}
+                onMove={async (dir) => {
+                  const order = scheduledExercises.map((e) => e.def.name)
+                  const target = dir === 'up' ? idx - 1 : idx + 1
+                  if (target < 0 || target >= order.length) return
+                  ;[order[idx], order[target]] = [order[target], order[idx]]
+                  await setExerciseOrder(selectedDate, day.index, order)
                 }}
               />
             )

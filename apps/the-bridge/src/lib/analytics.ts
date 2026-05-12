@@ -44,6 +44,7 @@ export function aggregateExercise(
     let sawValid = false
     for (const s of ex.sets) {
       if (s.r == null || s.r <= 0) continue
+      if (s.warmup) continue
       sawValid = true
       totalSets++
       totalReps += s.r
@@ -105,6 +106,7 @@ export function computeLifetimeStats(logs: WorkoutLog[]): LifetimeStats {
     for (const ex of log.exercises) {
       for (const s of ex.sets) {
         if (s.r == null || s.r <= 0) continue
+      if (s.warmup) continue
         hadValidSet = true
         totalSets++
         totalReps += s.r
@@ -153,7 +155,7 @@ export function weeklyMuscleVolume(logs: WorkoutLog[]): WeeklyMuscleVolume[] {
     }
     for (const ex of log.exercises) {
       const def = getExerciseDef(ex.name)
-      const sets = ex.sets.filter((s) => s.r != null && s.r > 0).length
+      const sets = ex.sets.filter((s) => s.r != null && s.r > 0 && !s.warmup).length
       if (sets === 0) continue
       for (const m of def.primaryMuscles ?? []) {
         row.byMuscle.set(m, (row.byMuscle.get(m) ?? 0) + sets)
@@ -195,7 +197,7 @@ export function muscleVolumeWindow(
     if (log.date > asOf) continue
     for (const ex of log.exercises) {
       const def = getExerciseDef(ex.name)
-      const sets = ex.sets.filter((s) => s.r != null && s.r > 0).length
+      const sets = ex.sets.filter((s) => s.r != null && s.r > 0 && !s.warmup).length
       if (sets === 0) continue
       for (const m of def.primaryMuscles ?? []) {
         out.set(m, (out.get(m) ?? 0) + sets)
@@ -230,7 +232,7 @@ export function predictedWeekVolume(
     if (log.date < weekStart || log.date > asOf) continue
     for (const ex of log.exercises) {
       const def = getExerciseDef(ex.name)
-      const sets = ex.sets.filter((s) => s.r != null && s.r > 0).length
+      const sets = ex.sets.filter((s) => s.r != null && s.r > 0 && !s.warmup).length
       if (sets === 0) continue
       for (const m of def.primaryMuscles ?? []) {
         thisWeek.set(m, (thisWeek.get(m) ?? 0) + sets)
@@ -272,7 +274,7 @@ export function daysSinceMuscle(
   const last = new Map<Muscle, string>()
   for (const log of logs) {
     for (const ex of log.exercises) {
-      const hasSet = ex.sets.some((s) => s.r != null && s.r > 0)
+      const hasSet = ex.sets.some((s) => s.r != null && s.r > 0 && !s.warmup)
       if (!hasSet) continue
       const def = getExerciseDef(ex.name)
       const muscles = [
@@ -311,7 +313,11 @@ export function flashbackLogs(
   const matches = (target: Date) => {
     const iso = target.toISOString().slice(0, 10)
     return logs.find(
-      (l) => l.date === iso && l.exercises.some((e) => e.sets.some((s) => s.r != null && s.r > 0))
+      (l) =>
+        l.date === iso &&
+        l.exercises.some((e) =>
+          e.sets.some((s) => s.r != null && s.r > 0 && !s.warmup)
+        )
     )
   }
   const result: Array<{ label: string; log: WorkoutLog }> = []
@@ -353,7 +359,7 @@ export function recentSessionsFor(
   for (const log of logs.slice().sort((a, b) => (a.date < b.date ? 1 : -1))) {
     const ex: ExerciseLog | undefined = log.exercises.find((e) => e.name === exerciseName)
     if (!ex) continue
-    const validSets = ex.sets.filter((s) => s.r != null && s.r > 0)
+    const validSets = ex.sets.filter((s) => s.r != null && s.r > 0 && !s.warmup)
     if (validSets.length === 0) continue
     found.push({ date: log.date, sets: validSets })
     if (found.length >= n) break

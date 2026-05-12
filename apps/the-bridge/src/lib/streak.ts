@@ -21,7 +21,9 @@ export function calculateStreak(
   // Only dates with at least one set with reps actually count as trained
   const trainedDates = logs
     .filter((log) =>
-      log.exercises.some((e) => e.sets.some((s) => s.r != null && s.r > 0))
+      log.exercises.some((e) =>
+        e.sets.some((s) => s.r != null && s.r > 0 && !s.warmup)
+      )
     )
     .map((log) => log.date)
     .sort()

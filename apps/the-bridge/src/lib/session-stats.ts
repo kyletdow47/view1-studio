@@ -36,6 +36,7 @@ export function computeSessionStats(log: WorkoutLog | null): SessionStats {
     const secondary = def.secondaryMuscles ?? []
     for (const s of ex.sets) {
       if (s.r == null || s.r <= 0) continue
+      if (s.warmup) continue
       sets++
       reps += s.r
       const setVolume = s.w != null ? s.w * s.r : 0

@@ -80,8 +80,9 @@ export async function logSet(
     }
   }
 
-  // PR check (only if both weight and reps are valid)
+  // PR check (only if both weight and reps are valid, and not a warmup)
   if (
+    !stamped.warmup &&
     stamped.w != null &&
     stamped.r != null &&
     stamped.w > 0 &&
@@ -252,6 +253,25 @@ export async function unpairSuperset(
       : e
   )
   await db.workoutLogs.put({ ...log, exercises })
+}
+
+/**
+ * Move a scheduled exercise up or down in today's display order. Persists
+ * via WorkoutLog.exerciseOrder. Caller passes the full ordered list of
+ * exercise names in the current view so we can store the canonical order.
+ */
+export async function setExerciseOrder(
+  date: string,
+  dayIndex: number,
+  order: string[]
+): Promise<void> {
+  const db = getDB()
+  const existing = (await db.workoutLogs.get(date)) ?? {
+    date,
+    dayIndex,
+    exercises: [],
+  }
+  await db.workoutLogs.put({ ...existing, exerciseOrder: order })
 }
 
 /** Mark today's workout complete (or undo if completedAt already set). */

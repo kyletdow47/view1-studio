@@ -91,6 +91,12 @@ export type SetEntry = {
   rir: number | null
   /** ISO timestamp when this set was logged (set on commit) */
   loggedAt?: string
+  /**
+   * True if this is a warmup set. Warmups are excluded from PRs, lifetime
+   * tonnage, weekly muscle volume, and the session totals card — they're
+   * still displayed but greyed out with a "W" badge.
+   */
+  warmup?: boolean
 }
 
 export type ExerciseLog = {
@@ -114,6 +120,12 @@ export type WorkoutLog = {
   exercises: ExerciseLog[]
   /** per-date overrides of the scheduled day's exercises */
   swaps?: ExerciseSwap[]
+  /**
+   * Optional per-date display order (array of exercise names). If absent,
+   * scheduled exercises use the program's default order and extras come
+   * after in log order.
+   */
+  exerciseOrder?: string[]
   /** ISO timestamp; set when the first set lands */
   startedAt?: string
   /** ISO timestamp; set when user taps "Complete workout" */

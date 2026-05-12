@@ -25,7 +25,9 @@ export function findLastSession(
   for (const log of candidates) {
     const exercise = log.exercises.find((e) => e.name === exerciseName)
     if (!exercise) continue
-    const validSets = exercise.sets.filter((s) => s.r != null && s.r > 0)
+    const validSets = exercise.sets.filter(
+      (s) => s.r != null && s.r > 0 && !s.warmup
+    )
     if (validSets.length === 0) continue
     return { date: log.date, sets: validSets }
   }
