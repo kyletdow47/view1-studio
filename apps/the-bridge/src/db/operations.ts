@@ -113,6 +113,26 @@ export async function deleteSet(
   await getDB().workoutLogs.put({ ...log, exercises })
 }
 
+/** Edit an existing set in place. Preserves loggedAt. */
+export async function updateSet(
+  date: string,
+  exerciseName: string,
+  setIndex: number,
+  patch: Partial<SetEntry>
+): Promise<void> {
+  const log = await getDB().workoutLogs.get(date)
+  if (!log) return
+  const idx = log.exercises.findIndex((e) => e.name === exerciseName)
+  if (idx < 0) return
+  const exercise = log.exercises[idx]
+  if (setIndex < 0 || setIndex >= exercise.sets.length) return
+  const sets = [...exercise.sets]
+  sets[setIndex] = { ...sets[setIndex], ...patch }
+  const exercises = [...log.exercises]
+  exercises[idx] = { ...exercise, sets }
+  await getDB().workoutLogs.put({ ...log, exercises })
+}
+
 export async function setExerciseNotes(
   date: string,
   dayIndex: number,

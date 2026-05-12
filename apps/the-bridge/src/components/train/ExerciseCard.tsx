@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   ExerciseDef,
   ExerciseLog,
@@ -15,6 +15,7 @@ import {
   deleteSet,
   logSet,
   setExerciseNotes,
+  updateSet,
 } from '@/db/operations'
 import { findLastSession } from '@/lib/last-session'
 import { relativeLabel } from '@/lib/date-utils'
@@ -145,11 +146,11 @@ export function ExerciseCard({
             {exercise.targetSets} × {exercise.targetReps} @ RIR {exercise.targetRIR}
           </p>
           {(exercise.primaryMuscles?.length ?? 0) > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {exercise.primaryMuscles?.map((m) => (
                 <span
                   key={m}
-                  className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-pink-500/15 text-pink-200 border border-pink-500/30"
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-pink-500/20 text-pink-100 border border-pink-500/40"
                 >
                   {m}
                 </span>
@@ -157,7 +158,7 @@ export function ExerciseCard({
               {exercise.secondaryMuscles?.map((m) => (
                 <span
                   key={m}
-                  className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-white/6 text-white/55 border border-white/10"
+                  className="text-[11px] px-2 py-0.5 rounded-pill bg-white/8 text-white/65 border border-white/12"
                 >
                   {m}
                 </span>
@@ -311,6 +312,7 @@ export function ExerciseCard({
               entry={s}
               lastSessionSet={lastSession?.sets[i]}
               onDelete={() => deleteSet(date, exercise.name, i)}
+              onUpdate={(patch) => updateSet(date, exercise.name, i, patch)}
             />
           ))}
         </ul>
@@ -328,6 +330,12 @@ export function ExerciseCard({
           draft={draft}
           onChange={setDraft}
           onCommit={commitDraft}
+          prevSet={
+            completedSets[completedSets.length - 1] ?? lastSession?.sets[0]
+          }
+          prThreshold={
+            pr ? { weight: pr.weight, reps: pr.reps } : null
+          }
         />
       ) : (
         <div className="flex items-center justify-between gap-3 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-3 py-2.5">
@@ -393,12 +401,17 @@ function SetRow({
   entry,
   lastSessionSet,
   onDelete,
+  onUpdate,
 }: {
   setNum: number
   entry: SetEntry
   lastSessionSet?: SetEntry
   onDelete: () => void
+  onUpdate?: (patch: Partial<SetEntry>) => void
 }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<SetEntry>(entry)
+
   // Compute deltas vs last session's matching set number.
   const wDelta =
     entry.w != null && lastSessionSet?.w != null
@@ -410,16 +423,70 @@ function SetRow({
       : null
   const hasDelta =
     (wDelta != null && wDelta !== 0) || (rDelta != null && rDelta !== 0)
+
+  if (editing) {
+    return (
+      <li className="rounded-md bg-white/6 border border-white/12 p-2 space-y-2">
+        <div className="grid grid-cols-[28px_1fr_1fr_64px_52px] gap-2 items-center">
+          <span className="font-mono text-xs text-white/45">#{setNum}</span>
+          <NumInput
+            placeholder="kg"
+            value={draft.w}
+            onChange={(v) => setDraft({ ...draft, w: v })}
+          />
+          <NumInput
+            placeholder="reps"
+            value={draft.r}
+            onChange={(v) => setDraft({ ...draft, r: v })}
+          />
+          <NumInput
+            placeholder="RIR"
+            value={draft.rir}
+            onChange={(v) => setDraft({ ...draft, rir: v })}
+          />
+          <button
+            onClick={() => {
+              onUpdate?.({ w: draft.w, r: draft.r, rir: draft.rir })
+              setEditing(false)
+            }}
+            className="h-[52px] rounded-md font-semibold rainbow-bright-fill text-white"
+            aria-label="Save edit"
+          >
+            ✓
+          </button>
+        </div>
+        <button
+          onClick={() => {
+            setDraft(entry)
+            setEditing(false)
+          }}
+          className="text-[11px] text-white/55 hover:text-white"
+        >
+          Cancel
+        </button>
+      </li>
+    )
+  }
+
   return (
     <li className="flex items-center gap-2 py-0.5">
       <span className="w-6 font-mono text-sm text-white/45">#{setNum}</span>
-      <span className="flex-1 font-mono text-lg tabular-nums">
+      <button
+        onClick={() => {
+          if (!onUpdate) return
+          setDraft(entry)
+          setEditing(true)
+        }}
+        disabled={!onUpdate}
+        className="flex-1 font-mono text-lg tabular-nums text-left hover:bg-white/4 rounded-md -mx-1 px-1 transition-colors"
+        title="Tap to edit"
+      >
         <span className="text-white font-semibold">{entry.w ?? '—'}</span>
         <span className="text-white/45 text-sm"> kg × </span>
         <span className="text-white font-semibold">{entry.r ?? '—'}</span>
         <span className="text-white/45 text-sm"> @ RIR </span>
         <span className="text-white font-semibold">{entry.rir ?? '—'}</span>
-      </span>
+      </button>
       {hasDelta && (
         <span className="text-[10px] font-mono tabular-nums shrink-0 flex flex-col items-end leading-none">
           {wDelta != null && wDelta !== 0 && (
@@ -456,44 +523,141 @@ function DraftSetRow({
   draft,
   onChange,
   onCommit,
+  prevSet,
+  prThreshold,
 }: {
   setNum: number
   draft: SetEntry
   onChange: (s: SetEntry) => void
   onCommit: () => void
+  /** previous set (this exercise) for "Repeat last" pre-fill */
+  prevSet?: SetEntry
+  /** the next-PR weight×reps tonnage to beat; used for "X kg from PR" hint */
+  prThreshold?: { weight: number; reps: number } | null
 }) {
   const filled = draft.w != null && draft.r != null
+  const weightRef = useRef<HTMLInputElement>(null)
+  const repsRef = useRef<HTMLInputElement>(null)
+  const rirRef = useRef<HTMLInputElement>(null)
+
+  // PR proximity: if current draft tonnage is within striking distance of
+  // the existing PR (same reps) — flag it so the user knows they're close.
+  const prHint = (() => {
+    if (!prThreshold || draft.w == null || draft.r == null) return null
+    if (draft.r < prThreshold.reps) return null
+    const gap = prThreshold.weight - draft.w
+    if (gap > 0 && gap <= 5) return `${gap}kg from PR`
+    if (gap <= 0 && draft.r >= prThreshold.reps) return 'PR territory'
+    return null
+  })()
+
+  function repeatLastSet() {
+    if (!prevSet) return
+    onChange({ w: prevSet.w, r: prevSet.r, rir: prevSet.rir })
+  }
+
+  function bumpWeight(delta: number) {
+    const next = (draft.w ?? prevSet?.w ?? 0) + delta
+    onChange({ ...draft, w: Math.max(0, Math.round(next * 10) / 10) })
+  }
+
   return (
-    <div className="grid grid-cols-[28px_1fr_1fr_64px_52px] gap-2 items-center">
-      <span className="font-mono text-xs text-white/45">#{setNum}</span>
-      <NumInput
-        placeholder="kg"
-        value={draft.w}
-        onChange={(v) => onChange({ ...draft, w: v })}
-      />
-      <NumInput
-        placeholder="reps"
-        value={draft.r}
-        onChange={(v) => onChange({ ...draft, r: v })}
-      />
-      <NumInput
-        placeholder="RIR"
-        value={draft.rir}
-        onChange={(v) => onChange({ ...draft, rir: v })}
-      />
-      <button
-        onClick={onCommit}
-        disabled={!filled}
-        className={cn(
-          'h-[52px] rounded-md font-semibold transition-all',
-          filled
-            ? 'rainbow-bright-fill text-white shadow-[0_4px_18px_rgba(236,72,153,0.4)]'
-            : 'bg-white/8 text-white/35'
+    <div className="space-y-2">
+      <div className="grid grid-cols-[28px_1fr_1fr_64px_52px] gap-2 items-center">
+        <span className="font-mono text-xs text-white/45">#{setNum}</span>
+        <NumInput
+          inputRef={weightRef}
+          placeholder="kg"
+          value={draft.w}
+          enterKeyHint="next"
+          onChange={(v) => onChange({ ...draft, w: v })}
+          onEnter={() => repsRef.current?.focus()}
+        />
+        <NumInput
+          inputRef={repsRef}
+          placeholder="reps"
+          value={draft.r}
+          enterKeyHint="next"
+          onChange={(v) => onChange({ ...draft, r: v })}
+          onEnter={() => rirRef.current?.focus()}
+        />
+        <NumInput
+          inputRef={rirRef}
+          placeholder="RIR"
+          value={draft.rir}
+          enterKeyHint="done"
+          onChange={(v) => onChange({ ...draft, rir: v })}
+          onEnter={() => {
+            rirRef.current?.blur()
+            if (filled) onCommit()
+          }}
+        />
+        <button
+          onClick={onCommit}
+          disabled={!filled}
+          className={cn(
+            'h-[52px] rounded-md font-semibold transition-all',
+            filled
+              ? 'rainbow-bright-fill text-white shadow-[0_4px_18px_rgba(236,72,153,0.4)]'
+              : 'bg-white/8 text-white/35'
+          )}
+          aria-label="Log set"
+        >
+          ✓
+        </button>
+      </div>
+      {/* Weight steppers + repeat-last + PR hint */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <button
+          onClick={() => bumpWeight(-2.5)}
+          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+          aria-label="Decrease weight by 2.5kg"
+        >
+          −2.5
+        </button>
+        <button
+          onClick={() => bumpWeight(2.5)}
+          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+          aria-label="Increase weight by 2.5kg"
+        >
+          +2.5
+        </button>
+        <button
+          onClick={() => bumpWeight(-5)}
+          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+          aria-label="Decrease weight by 5kg"
+        >
+          −5
+        </button>
+        <button
+          onClick={() => bumpWeight(5)}
+          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+          aria-label="Increase weight by 5kg"
+        >
+          +5
+        </button>
+        {prevSet && prevSet.w != null && (
+          <button
+            onClick={repeatLastSet}
+            className="text-[11px] font-medium text-cyan-200 hover:text-cyan-100 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30 ml-auto"
+            title="Pre-fill same weight/reps/RIR as last set"
+          >
+            ↻ Same as last
+          </button>
         )}
-        aria-label="Log set"
-      >
-        ✓
-      </button>
+      </div>
+      {prHint && (
+        <p
+          className={cn(
+            'text-[11px] font-semibold text-center',
+            prHint === 'PR territory'
+              ? 'rainbow-text animate-pulse'
+              : 'text-pink-300'
+          )}
+        >
+          {prHint === 'PR territory' ? '🔥 PR territory — send it' : `${prHint}`}
+        </p>
+      )}
     </div>
   )
 }
@@ -502,15 +666,23 @@ function NumInput({
   placeholder,
   value,
   onChange,
+  inputRef,
+  enterKeyHint,
+  onEnter,
 }: {
   placeholder: string
   value: number | null
   onChange: (v: number | null) => void
+  inputRef?: React.Ref<HTMLInputElement>
+  enterKeyHint?: 'next' | 'done' | 'go' | 'search' | 'send' | 'enter'
+  onEnter?: () => void
 }) {
   return (
     <input
+      ref={inputRef}
       type="number"
       inputMode="decimal"
+      enterKeyHint={enterKeyHint}
       placeholder={placeholder}
       value={value ?? ''}
       onChange={(e) => {
@@ -518,6 +690,12 @@ function NumInput({
         if (raw === '') return onChange(null)
         const n = Number(raw)
         onChange(Number.isFinite(n) ? n : null)
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          onEnter?.()
+        }
       }}
       className={cn('set-input w-full', value != null && 'filled')}
     />

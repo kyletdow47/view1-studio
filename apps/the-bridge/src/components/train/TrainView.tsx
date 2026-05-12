@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { getExerciseDef } from '@/data/exercises'
 import { useAllWorkoutLogs, useSettings, useWorkoutLog } from '@/db/hooks'
 import { fmtDuration, useElapsed } from '@/lib/duration'
+import { useWakeLock } from '@/lib/wake-lock'
 import { computeSessionStats } from '@/lib/session-stats'
 import { flashbackLogs } from '@/lib/analytics'
 import { cn } from '@/lib/cn'
@@ -90,6 +91,8 @@ export function TrainView() {
   const stats = useMemo(() => computeSessionStats(log), [log])
   const isCompleted = !!log?.completedAt
   const elapsed = useElapsed(log?.startedAt, log?.completedAt)
+  // Keep screen on whenever a workout is in progress (sets logged, not finished)
+  useWakeLock(!!log?.startedAt && !isCompleted)
   const flashbacks = useMemo(
     () => flashbackLogs(allLogs, selectedDate),
     [allLogs, selectedDate]
