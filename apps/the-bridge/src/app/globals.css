@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '../styles/tokens.css';
+
+html,
+body {
+  height: 100%;
+  background: #0a0a12;
+  color: var(--text-100);
+  font-family: var(--font-geist-sans), 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* Multi-layer radial gradient — subtle iridescence without an image */
+  background-color: #0a0a12;
+  background-image:
+    radial-gradient(at 20% 10%, rgba(245, 158, 11, 0.10) 0%, transparent 45%),
+    radial-gradient(at 80% 0%, rgba(236, 72, 153, 0.10) 0%, transparent 50%),
+    radial-gradient(at 90% 70%, rgba(168, 85, 247, 0.10) 0%, transparent 55%),
+    radial-gradient(at 10% 95%, rgba(59, 130, 246, 0.10) 0%, transparent 55%);
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* Reusable component classes */
+@layer components {
+  .glass-card {
+    position: relative;
+    background: var(--glass-08);
+    border-radius: var(--r-lg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.30);
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--rainbow-stroke-soft);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .glass-card-bright::before {
+    background: var(--rainbow-stroke-bright);
+  }
+
+  .rainbow-text {
+    background: var(--rainbow-full);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .rainbow-fill {
+    background: var(--rainbow-full);
+  }
+
+  .rainbow-bright-fill {
+    background: var(--rainbow-bright);
+  }
+
+  /* High-contrast set inputs — sweaty fingers, bright gym */
+  .set-input {
+    background: var(--glass-14);
+    border: 1px solid var(--glass-20);
+    border-radius: var(--r-md);
+    color: var(--text-100);
+    font-family: var(--font-geist-mono), 'JetBrains Mono', monospace;
+    font-weight: 600;
+    text-align: center;
+    height: 52px;
+    font-size: 18px;
+  }
+
+  .set-input:focus {
+    outline: none;
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  }
+
+  .set-input.filled {
+    background: linear-gradient(
+      135deg,
+      rgba(245, 158, 11, 0.18) 0%,
+      rgba(236, 72, 153, 0.18) 100%
+    );
+    border-color: rgba(236, 72, 153, 0.45);
+  }
+
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
