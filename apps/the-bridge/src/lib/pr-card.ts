@@ -41,9 +41,11 @@ export async function renderPRCard(pr: PersonalRecord): Promise<Blob> {
   ctx.font = '600 56px ui-sans-serif, system-ui, -apple-system'
   ctx.fillText(pr.exerciseName, SIZE / 2, 178, SIZE - 80)
 
-  // Big weight×reps — with a rainbow gradient stroke
-  const huge = `${pr.weight} kg × ${pr.reps}`
-  ctx.font = '900 200px ui-monospace, "SF Mono", Menlo, monospace'
+  // Big weight×reps — with a rainbow gradient stroke. For pure bodyweight
+  // rep PRs (weight===0), render just "30 reps".
+  const isRepPR = !pr.weight || pr.weight === 0
+  const huge = isRepPR ? `${pr.reps} reps` : `${pr.weight} kg × ${pr.reps}`
+  ctx.font = `900 ${isRepPR ? 220 : 200}px ui-monospace, "SF Mono", Menlo, monospace`
   ctx.textBaseline = 'middle'
 
   const grad = ctx.createLinearGradient(0, SIZE / 2 - 100, SIZE, SIZE / 2 + 100)
@@ -59,12 +61,16 @@ export async function renderPRCard(pr: PersonalRecord): Promise<Blob> {
   ctx.fillText(huge, SIZE / 2, SIZE / 2, SIZE - 60)
   ctx.shadowBlur = 0
 
-  // e1RM line
-  const est = Math.round(e1RM(pr.weight, pr.reps))
+  // Subhead — e1RM for weighted PRs, "bodyweight" for rep PRs
   ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
   ctx.font = '500 36px ui-sans-serif, system-ui'
   ctx.textBaseline = 'top'
-  ctx.fillText(`Est. 1RM · ${est} kg`, SIZE / 2, SIZE / 2 + 140)
+  if (isRepPR) {
+    ctx.fillText('bodyweight', SIZE / 2, SIZE / 2 + 140)
+  } else {
+    const est = Math.round(e1RM(pr.weight, pr.reps))
+    ctx.fillText(`Est. 1RM · ${est} kg`, SIZE / 2, SIZE / 2 + 140)
+  }
 
   // Date
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)'
@@ -78,12 +84,14 @@ export async function renderPRCard(pr: PersonalRecord): Promise<Blob> {
   ctx.textBaseline = 'bottom'
   ctx.fillText('the bridge', SIZE - 60, SIZE - 60)
 
-  // Bottom-left tiny tonnage
-  const tonnage = pr.weight * pr.reps
-  ctx.textAlign = 'left'
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
-  ctx.font = '500 24px ui-monospace'
-  ctx.fillText(`${tonnage.toLocaleString()} kg moved`, 60, SIZE - 60)
+  // Bottom-left: tonnage for weighted PRs only
+  if (!isRepPR) {
+    const tonnage = pr.weight * pr.reps
+    ctx.textAlign = 'left'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
+    ctx.font = '500 24px ui-monospace'
+    ctx.fillText(`${tonnage.toLocaleString()} kg moved`, 60, SIZE - 60)
+  }
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -111,10 +119,14 @@ export async function sharePRCard(pr: PersonalRecord): Promise<'shared' | 'downl
   }
   if (nav.canShare && nav.canShare({ files: [file] }) && navigator.share) {
     try {
+      const text =
+        !pr.weight || pr.weight === 0
+          ? `${pr.reps} reps · new PR`
+          : `${pr.weight} kg × ${pr.reps} · new PR`
       await navigator.share({
         files: [file],
         title: `${pr.exerciseName} PR`,
-        text: `${pr.weight} kg × ${pr.reps} · new PR`,
+        text,
       })
       return 'shared'
     } catch {

@@ -108,7 +108,9 @@ function formatExercise(ex: ExerciseLog): string[] {
   for (let i = 0; i < validSets.length; i++) {
     const s = validSets[i]
     const rir = s.rir != null ? ` @ RIR ${s.rir}` : ''
-    out.push(`${i + 1}. ${s.w ?? '—'} kg × ${s.r}${rir}`)
+    const body =
+      s.w == null ? `${s.r} reps (bodyweight)` : `${s.w} kg × ${s.r}`
+    out.push(`${i + 1}. ${body}${rir}`)
   }
   if (ex.notes && ex.notes.trim()) {
     out.push(`> ${ex.notes.trim()}`)

@@ -3,7 +3,6 @@ import { GROCERY_TEMPLATE } from '@/data/grocery'
 import { DEFAULT_SETTINGS } from '@/data/settings'
 import { getExerciseDef } from '@/data/exercises'
 import { isNewPR, buildPR } from '@/lib/pr'
-import { bodyweightLookup } from '@/lib/effective-weight'
 import type {
   ExerciseLog,
   GrocerySection,
@@ -82,27 +81,36 @@ export async function logSet(
     }
   }
 
-  // PR check. For bodyweight exercises, fold the current bodyweight into the
-  // recorded weight so reps at BW actually qualify as PRs. Skip warmups.
+  // PR detection branches on whether the movement is weighted or pure
+  // bodyweight. Warmups never qualify.
   if (!stamped.warmup && stamped.r != null && stamped.r > 0) {
     const def = getExerciseDef(exerciseName)
-    let effectiveKg = stamped.w ?? 0
-    if (def.isBodyweight) {
-      const allWeights = await getDB().weights.toArray()
-      const bwAt = bodyweightLookup(allWeights)
-      const bw = bwAt(date)
-      if (bw != null) effectiveKg = bw + (stamped.w ?? 0)
-    }
-    if (effectiveKg > 0) {
-      const current = await getDB().personalRecords.get(exerciseName)
-      if (isNewPR(effectiveKg, stamped.r, current ?? null)) {
-        const pr = buildPR(exerciseName, effectiveKg, stamped.r, date)
+    const w = stamped.w ?? 0
+    const current = await getDB().personalRecords.get(exerciseName)
+
+    if (def.isBodyweight && w === 0) {
+      // Pure bodyweight set → rep PR (most reps in a single working set).
+      // Stored with weight=0; UI renders this as "25 reps" instead of "0 kg × 25".
+      if (!current || stamped.r > current.reps) {
+        const pr = buildPR(exerciseName, 0, stamped.r, date)
+        await getDB().personalRecords.put(pr)
+        return { pr }
+      }
+    } else if (w > 0) {
+      // Weighted set (normal or weighted bodyweight variant) → weight PR.
+      if (isNewPR(w, stamped.r, current ?? null)) {
+        const pr = buildPR(exerciseName, w, stamped.r, date)
         await getDB().personalRecords.put(pr)
         return { pr }
       }
     }
   }
   return { pr: null }
+}
+
+/** Delete a PR record by exercise name. */
+export async function deletePR(exerciseName: string): Promise<void> {
+  await getDB().personalRecords.delete(exerciseName)
 }
 
 export async function deleteSet(

@@ -146,7 +146,10 @@ export function ExerciseCard({
             <PriorityBadge priority={exercise.priority} />
             {pr && (
               <span className="text-[10px] font-semibold tracking-wider px-1.5 py-0.5 rounded-sm border bg-pink-500/15 text-pink-300 border-pink-500/30">
-                PR {pr.weight}×{pr.reps}
+                PR{' '}
+                {pr.weight > 0
+                  ? `${pr.weight}×${pr.reps}`
+                  : `${pr.reps} reps`}
               </span>
             )}
           </div>
@@ -390,6 +393,7 @@ export function ExerciseCard({
           prThreshold={
             pr ? { weight: pr.weight, reps: pr.reps } : null
           }
+          isBodyweight={!!exercise.isBodyweight}
         />
       ) : (
         <div className="flex items-center justify-between gap-3 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-3 py-2.5">
@@ -564,11 +568,30 @@ function SetRow({
         className="flex-1 font-mono text-lg tabular-nums text-left hover:bg-white/4 rounded-md -mx-1 px-1 transition-colors"
         title="Tap to edit"
       >
-        <span className="text-white font-semibold">{entry.w ?? '—'}</span>
-        <span className="text-white/45 text-sm"> kg × </span>
-        <span className="text-white font-semibold">{entry.r ?? '—'}</span>
-        <span className="text-white/45 text-sm"> @ RIR </span>
-        <span className="text-white font-semibold">{entry.rir ?? '—'}</span>
+        {entry.w == null ? (
+          <>
+            <span className="text-white font-semibold">{entry.r ?? '—'}</span>
+            <span className="text-white/45 text-sm"> reps</span>
+            {entry.rir != null && (
+              <>
+                <span className="text-white/45 text-sm"> @ RIR </span>
+                <span className="text-white font-semibold">{entry.rir}</span>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <span className="text-white font-semibold">{entry.w}</span>
+            <span className="text-white/45 text-sm"> kg × </span>
+            <span className="text-white font-semibold">{entry.r ?? '—'}</span>
+            {entry.rir != null && (
+              <>
+                <span className="text-white/45 text-sm"> @ RIR </span>
+                <span className="text-white font-semibold">{entry.rir}</span>
+              </>
+            )}
+          </>
+        )}
       </button>
       {hasDelta && (
         <span className="text-[10px] font-mono tabular-nums shrink-0 flex flex-col items-end leading-none">
@@ -608,6 +631,7 @@ function DraftSetRow({
   onCommit,
   prevSet,
   prThreshold,
+  isBodyweight,
 }: {
   setNum: number
   draft: SetEntry
@@ -615,14 +639,22 @@ function DraftSetRow({
   onCommit: () => void
   /** previous set (this exercise) for "Repeat last" pre-fill */
   prevSet?: SetEntry
-  /** the next-PR weight×reps tonnage to beat; used for "X kg from PR" hint */
+  /** the next-PR threshold; used for "X from PR" hint */
   prThreshold?: { weight: number; reps: number } | null
+  /** if true, hide the kg field by default and treat the exercise as rep-tracked */
+  isBodyweight?: boolean
 }) {
-  const filled = draft.w != null && draft.r != null
   const weightRef = useRef<HTMLInputElement>(null)
   const repsRef = useRef<HTMLInputElement>(null)
   const rirRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState<'w' | 'r' | 'rir' | null>(null)
+  // For bodyweight: opt-in to add weight (vest, belt, etc.). Toggle stays
+  // on for the rest of the session if the user enables it.
+  const [showWeight, setShowWeight] = useState(false)
+  const useKgField = !isBodyweight || showWeight
+  // Commit requires reps; weight only when kg field is active. RIR is always optional.
+  const filled = useKgField ? draft.w != null && draft.r != null : draft.r != null
+
   // Auto-dismiss pad when the draft empties (typically after a successful commit).
   useEffect(() => {
     if (draft.w == null && draft.r == null && draft.rir == null) {
@@ -630,10 +662,21 @@ function DraftSetRow({
     }
   }, [draft.w, draft.r, draft.rir])
 
-  // PR proximity: if current draft tonnage is within striking distance of
-  // the existing PR (same reps) — flag it so the user knows they're close.
+  // PR proximity hint. For weighted exercises: "Xkg from PR" when within 5kg
+  // at >= PR reps. For pure bodyweight rep PRs (prThreshold.weight === 0):
+  // "Xr from PR" when within 5 reps.
   const prHint = (() => {
-    if (!prThreshold || draft.w == null || draft.r == null) return null
+    if (!prThreshold) return null
+    const isBodyweightRepPR =
+      prThreshold.weight === 0 && prThreshold.reps > 0
+    if (isBodyweightRepPR) {
+      if (draft.r == null) return null
+      const gap = prThreshold.reps - draft.r
+      if (gap > 0 && gap <= 5) return `${gap}r from PR`
+      if (gap <= 0) return 'PR territory'
+      return null
+    }
+    if (draft.w == null || draft.r == null) return null
     if (draft.r < prThreshold.reps) return null
     const gap = prThreshold.weight - draft.w
     if (gap > 0 && gap <= 5) return `${gap}kg from PR`
@@ -653,16 +696,25 @@ function DraftSetRow({
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[28px_1fr_1fr_64px_52px] gap-2 items-center">
+      <div
+        className={cn(
+          'grid gap-2 items-center',
+          useKgField
+            ? 'grid-cols-[28px_1fr_1fr_64px_52px]'
+            : 'grid-cols-[28px_1fr_64px_52px]'
+        )}
+      >
         <span className="font-mono text-xs text-white/45">#{setNum}</span>
-        <NumInput
-          inputRef={weightRef}
-          placeholder="kg"
-          value={draft.w}
-          isFocused={focused === 'w'}
-          onFocusField={() => setFocused('w')}
-          onChange={(v) => onChange({ ...draft, w: v })}
-        />
+        {useKgField && (
+          <NumInput
+            inputRef={weightRef}
+            placeholder={isBodyweight ? '+kg' : 'kg'}
+            value={draft.w}
+            isFocused={focused === 'w'}
+            onFocusField={() => setFocused('w')}
+            onChange={(v) => onChange({ ...draft, w: v })}
+          />
+        )}
         <NumInput
           inputRef={repsRef}
           placeholder="reps"
@@ -693,36 +745,57 @@ function DraftSetRow({
           ✓
         </button>
       </div>
-      {/* Weight steppers + repeat-last + PR hint */}
+      {/* Action chips. Weight steppers + Same-as-last only when kg field is active. */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <button
-          onClick={() => bumpWeight(-2.5)}
-          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
-          aria-label="Decrease weight by 2.5kg"
-        >
-          −2.5
-        </button>
-        <button
-          onClick={() => bumpWeight(2.5)}
-          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
-          aria-label="Increase weight by 2.5kg"
-        >
-          +2.5
-        </button>
-        <button
-          onClick={() => bumpWeight(-5)}
-          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
-          aria-label="Decrease weight by 5kg"
-        >
-          −5
-        </button>
-        <button
-          onClick={() => bumpWeight(5)}
-          className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
-          aria-label="Increase weight by 5kg"
-        >
-          +5
-        </button>
+        {useKgField && (
+          <>
+            <button
+              onClick={() => bumpWeight(-2.5)}
+              className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+              aria-label="Decrease weight by 2.5kg"
+            >
+              −2.5
+            </button>
+            <button
+              onClick={() => bumpWeight(2.5)}
+              className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+              aria-label="Increase weight by 2.5kg"
+            >
+              +2.5
+            </button>
+            <button
+              onClick={() => bumpWeight(-5)}
+              className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+              aria-label="Decrease weight by 5kg"
+            >
+              −5
+            </button>
+            <button
+              onClick={() => bumpWeight(5)}
+              className="text-xs font-mono font-semibold text-white/75 hover:text-white px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/14"
+              aria-label="Increase weight by 5kg"
+            >
+              +5
+            </button>
+          </>
+        )}
+        {isBodyweight && (
+          <button
+            onClick={() => {
+              setShowWeight((v) => !v)
+              if (showWeight) onChange({ ...draft, w: null })
+            }}
+            className={cn(
+              'text-[11px] font-semibold px-2.5 py-1 rounded-md transition-all',
+              showWeight
+                ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40'
+                : 'bg-white/8 text-white/65 border border-white/12'
+            )}
+            title="Track added weight (vest, belt, weighted dip, etc.)"
+          >
+            {showWeight ? '− Remove weight' : '+ Add weight'}
+          </button>
+        )}
         <button
           onClick={() => onChange({ ...draft, warmup: !draft.warmup })}
           className={cn(
@@ -735,11 +808,11 @@ function DraftSetRow({
         >
           {draft.warmup ? '✓ Warmup' : 'Warmup'}
         </button>
-        {prevSet && prevSet.w != null && (
+        {prevSet && prevSet.r != null && (
           <button
             onClick={repeatLastSet}
             className="text-[11px] font-medium text-cyan-200 hover:text-cyan-100 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30"
-            title="Pre-fill same weight/reps/RIR as last set"
+            title="Pre-fill same values as last set"
           >
             ↻ Same as last
           </button>
@@ -754,7 +827,7 @@ function DraftSetRow({
               : 'text-pink-300'
           )}
         >
-          {prHint === 'PR territory' ? '🔥 PR territory — send it' : `${prHint}`}
+          {prHint === 'PR territory' ? '🔥 PR territory — push through' : prHint}
         </p>
       )}
 
@@ -893,7 +966,10 @@ function LastSessionPanel({ lastSession }: { lastSession: import('@/lib/last-ses
         <span>
           Last:{' '}
           <span className="text-white/85">
-            {first.w} kg × {first.r} @ {first.rir}
+            {first.w == null
+              ? `${first.r} reps`
+              : `${first.w} kg × ${first.r}`}
+            {first.rir != null && ` @ RIR ${first.rir}`}
           </span>
           {totalSets > 1 && (
             <span className="text-white/40"> · {totalSets} sets</span>
@@ -920,8 +996,10 @@ function LastSessionPanel({ lastSession }: { lastSession: import('@/lib/last-ses
             <li key={i} className="font-mono text-white/70 flex gap-2">
               <span className="text-white/40 w-5">#{i + 1}</span>
               <span>
-                {s.w} kg × {s.r}{' '}
-                <span className="text-white/40">@ RIR {s.rir}</span>
+                {s.w == null ? `${s.r} reps` : `${s.w} kg × ${s.r}`}
+                {s.rir != null && (
+                  <span className="text-white/40"> @ RIR {s.rir}</span>
+                )}
               </span>
             </li>
           ))}

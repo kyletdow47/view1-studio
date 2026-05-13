@@ -53,7 +53,7 @@ export function PRBurst({ pr, onDone }: Props) {
             New PR
           </p>
           <p className="font-display text-5xl font-black rainbow-text mt-1">
-            {pr.weight}kg × {pr.reps}
+            {pr.weight > 0 ? `${pr.weight}kg × ${pr.reps}` : `${pr.reps} reps`}
           </p>
           <p className="text-sm text-white/75 mt-1 font-mono">{pr.exerciseName}</p>
         </div>

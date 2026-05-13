@@ -25,21 +25,19 @@ export function bodyweightLookup(weights: WeightEntry[]) {
 /**
  * Resolve the load (kg) a given set actually represents.
  *
- *   Non-bodyweight exercise:   set.w (or 0 if not entered)
- *   Bodyweight exercise:        bodyweight(at date) + (set.w ?? 0)
- *
- * `set.w` for a bodyweight movement is interpreted as ADDED weight
- * (weighted dips, belt pull-ups, vest push-ups, etc.).
+ * For all exercises: just whatever weight the user typed in (or 0).
+ * For bodyweight movements, `set.w` is interpreted as ADDED weight on top
+ * of the user's body (weighted dips/vest push-ups/belt pull-ups). We
+ * deliberately do NOT fold bodyweight into the load — push-ups don't
+ * actually press 100% of bodyweight, and tracking phantom tonnage caused
+ * inflated/double-counted PRs. Bodyweight movements are tracked by reps
+ * instead (see PR detection in db/operations.ts).
  */
 export function effectiveWeight(
   set: Pick<SetEntry, 'w'>,
-  def: Pick<ExerciseDef, 'isBodyweight'>,
-  bodyweightAt: (date?: string) => number | null,
-  date?: string
+  _def: Pick<ExerciseDef, 'isBodyweight'>,
+  _bodyweightAt?: (date?: string) => number | null,
+  _date?: string
 ): number {
-  if (def.isBodyweight) {
-    const bw = bodyweightAt(date) ?? 0
-    return bw + (set.w ?? 0)
-  }
   return set.w ?? 0
 }
