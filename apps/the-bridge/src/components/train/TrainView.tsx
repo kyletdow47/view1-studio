@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { getExerciseDef } from '@/data/exercises'
 import { resolveActiveProgram } from '@/data/active-program'
-import { useAllWorkoutLogs, useSettings, useWorkoutLog } from '@/db/hooks'
+import {
+  useAllWeights,
+  useAllWorkoutLogs,
+  useSettings,
+  useWorkoutLog,
+} from '@/db/hooks'
 import { fmtDuration, useElapsed } from '@/lib/duration'
 import { useWakeLock } from '@/lib/wake-lock'
 import { computeSessionStats } from '@/lib/session-stats'
@@ -42,6 +47,7 @@ export function TrainView() {
   const setSelectedDate = useUIStore((s) => s.setSelectedDate)
   const log = useWorkoutLog(selectedDate)
   const allLogs = useAllWorkoutLogs()
+  const weights = useAllWeights()
   const { toast } = useToast()
   const [addOpen, setAddOpen] = useState(false)
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
@@ -100,7 +106,7 @@ export function TrainView() {
     return set
   }, [scheduledNames, extras])
 
-  const stats = useMemo(() => computeSessionStats(log), [log])
+  const stats = useMemo(() => computeSessionStats(log, weights), [log, weights])
   const isCompleted = !!log?.completedAt
   const elapsed = useElapsed(log?.startedAt, log?.completedAt)
   // Keep screen on whenever a workout is in progress (sets logged, not finished)

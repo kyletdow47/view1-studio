@@ -1,5 +1,6 @@
-import type { Muscle, WorkoutLog } from '@/types'
+import type { Muscle, WeightEntry, WorkoutLog } from '@/types'
 import { getExerciseDef } from '@/data/exercises'
+import { bodyweightLookup, effectiveWeight } from './effective-weight'
 
 export type MuscleVolume = {
   muscle: Muscle
@@ -21,14 +22,22 @@ export type SessionStats = {
 /**
  * Computes session-level stats from a workout log. Muscle sets are weighted:
  * primary muscle gets the full set, secondary muscles get half a set each.
+ *
+ * `weights` is needed so bodyweight exercises contribute realistic volume
+ * (load = bodyweight at session date + any added kg).
  */
-export function computeSessionStats(log: WorkoutLog | null): SessionStats {
+export function computeSessionStats(
+  log: WorkoutLog | null,
+  weights: WeightEntry[] = []
+): SessionStats {
   let sets = 0
   let reps = 0
   let volume = 0
   const byMuscle = new Map<Muscle, MuscleVolume>()
 
   if (!log) return { sets, reps, volume, muscles: [], topMuscles: [] }
+
+  const bwAt = bodyweightLookup(weights)
 
   for (const ex of log.exercises) {
     const def = getExerciseDef(ex.name)
@@ -39,7 +48,8 @@ export function computeSessionStats(log: WorkoutLog | null): SessionStats {
       if (s.warmup) continue
       sets++
       reps += s.r
-      const setVolume = s.w != null ? s.w * s.r : 0
+      const load = effectiveWeight(s, def, bwAt, log.date)
+      const setVolume = load * s.r
       volume += setVolume
       for (const m of primary) {
         const cur = byMuscle.get(m) ?? {

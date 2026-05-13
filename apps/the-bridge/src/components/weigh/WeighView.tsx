@@ -1,22 +1,38 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { useToast } from '@/components/ui/Toast'
 import { useAllWeights, useSettings } from '@/db/hooks'
 import { deleteWeight, logWeight } from '@/db/operations'
-import { todayISO, daysBetween, fromISO, monthDayLabel, relativeLabel } from '@/lib/date-utils'
+import { todayISO, daysBetween, monthDayLabel, relativeLabel } from '@/lib/date-utils'
 
 export function WeighView() {
   const settings = useSettings()
   const weights = useAllWeights()
   const [logOpen, setLogOpen] = useState(false)
+  const [quickKg, setQuickKg] = useState('')
+  const { toast } = useToast()
+  const quickInputRef = useRef<HTMLInputElement>(null)
 
   const latest = weights[weights.length - 1]
   const current = latest?.kg ?? settings.startWeight
   const deltaStart = current - settings.startWeight
   const distanceToGoal = settings.goalWeight - current
+
+  async function quickLog() {
+    const n = Number(quickKg)
+    if (!Number.isFinite(n) || n <= 0) {
+      toast('Enter a valid weight', 'error')
+      return
+    }
+    await logWeight({ date: todayISO(), kg: n, notes: '' })
+    setQuickKg('')
+    quickInputRef.current?.blur()
+    toast(`Logged ${n.toFixed(1)} kg`, 'success')
+  }
 
   const weeklyChange = useMemo(() => {
     if (weights.length < 2) return 0
@@ -31,6 +47,40 @@ export function WeighView() {
 
   return (
     <div className="space-y-4 pt-1">
+      <h2 className="font-display text-xl font-semibold tracking-tight">
+        <span className="rainbow-text">Weight</span>
+      </h2>
+
+      <Card className="space-y-2">
+        <p className="text-[10px] uppercase tracking-wider text-white/55 font-semibold">
+          Log today's weight
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            ref={quickInputRef}
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            placeholder="e.g. 72.4"
+            value={quickKg}
+            onChange={(e) => setQuickKg(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') quickLog()
+            }}
+            enterKeyHint="done"
+            className="set-input flex-1 text-2xl font-mono"
+            style={{ color: 'white' }}
+          />
+          <span className="text-sm text-white/55 font-mono">kg</span>
+          <Button onClick={quickLog} className="px-4">
+            Log
+          </Button>
+        </div>
+        <p className="text-[10px] text-white/45">
+          Saved with today's date. Re-logging overwrites today's entry.
+        </p>
+      </Card>
+
       <Card>
         <p className="text-xs uppercase tracking-wider text-white/55">
           Current weight
@@ -62,8 +112,8 @@ export function WeighView() {
         <WeightChart weights={weights} settings={settings} />
       </Card>
 
-      <Button onClick={() => setLogOpen(true)} className="w-full">
-        Log weight
+      <Button onClick={() => setLogOpen(true)} variant="ghost" className="w-full">
+        Log with notes
       </Button>
 
       {weights.length > 0 && (

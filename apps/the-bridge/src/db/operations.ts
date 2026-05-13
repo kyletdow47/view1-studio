@@ -1,7 +1,9 @@
 import { getDB } from './schema'
 import { GROCERY_TEMPLATE } from '@/data/grocery'
 import { DEFAULT_SETTINGS } from '@/data/settings'
+import { getExerciseDef } from '@/data/exercises'
 import { isNewPR, buildPR } from '@/lib/pr'
+import { bodyweightLookup } from '@/lib/effective-weight'
 import type {
   ExerciseLog,
   GrocerySection,
@@ -80,19 +82,24 @@ export async function logSet(
     }
   }
 
-  // PR check (only if both weight and reps are valid, and not a warmup)
-  if (
-    !stamped.warmup &&
-    stamped.w != null &&
-    stamped.r != null &&
-    stamped.w > 0 &&
-    stamped.r > 0
-  ) {
-    const current = await getDB().personalRecords.get(exerciseName)
-    if (isNewPR(stamped.w, stamped.r, current ?? null)) {
-      const pr = buildPR(exerciseName, stamped.w, stamped.r, date)
-      await getDB().personalRecords.put(pr)
-      return { pr }
+  // PR check. For bodyweight exercises, fold the current bodyweight into the
+  // recorded weight so reps at BW actually qualify as PRs. Skip warmups.
+  if (!stamped.warmup && stamped.r != null && stamped.r > 0) {
+    const def = getExerciseDef(exerciseName)
+    let effectiveKg = stamped.w ?? 0
+    if (def.isBodyweight) {
+      const allWeights = await getDB().weights.toArray()
+      const bwAt = bodyweightLookup(allWeights)
+      const bw = bwAt(date)
+      if (bw != null) effectiveKg = bw + (stamped.w ?? 0)
+    }
+    if (effectiveKg > 0) {
+      const current = await getDB().personalRecords.get(exerciseName)
+      if (isNewPR(effectiveKg, stamped.r, current ?? null)) {
+        const pr = buildPR(exerciseName, effectiveKg, stamped.r, date)
+        await getDB().personalRecords.put(pr)
+        return { pr }
+      }
     }
   }
   return { pr: null }

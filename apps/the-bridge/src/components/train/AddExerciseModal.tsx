@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { searchExercises, getExerciseDef } from '@/data/exercises'
 import { addExerciseToLog, swapScheduledExercise } from '@/db/operations'
+import { useSettings } from '@/db/hooks'
 import { EXERCISE_CATEGORIES, type ExerciseCategory, type ExerciseDef } from '@/types'
 import { cn } from '@/lib/cn'
 
@@ -31,8 +32,10 @@ export function AddExerciseModal({
   swapOriginal,
   onSwapDone,
 }: Props) {
+  const settings = useSettings()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<ExerciseCategory | 'All'>('All')
+  const [bodyweightOnly, setBodyweightOnly] = useState(!!settings.homeMode)
 
   // In swap mode, default the category filter to match the original.
   const initialCategory: ExerciseCategory | 'All' = useMemo(() => {
@@ -50,11 +53,12 @@ export function AddExerciseModal({
   const filtered = useMemo(() => {
     let list = searchExercises(query)
     if (category !== 'All') list = list.filter((e) => e.category === category)
+    if (bodyweightOnly) list = list.filter((e) => e.isBodyweight)
     if (mode === 'swap' && swapOriginal) {
       list = list.filter((e) => e.name !== swapOriginal)
     }
     return list
-  }, [query, category, mode, swapOriginal])
+  }, [query, category, bodyweightOnly, mode, swapOriginal])
 
   async function add(ex: ExerciseDef) {
     if (mode === 'swap' && swapOriginal) {
@@ -86,6 +90,11 @@ export function AddExerciseModal({
           className="flex gap-1.5 overflow-x-auto -mx-1 px-1 py-1"
           style={{ scrollbarWidth: 'none' }}
         >
+          <Chip
+            label={bodyweightOnly ? '🏠 Home only' : '🏠 Home'}
+            active={bodyweightOnly}
+            onClick={() => setBodyweightOnly((v) => !v)}
+          />
           <Chip
             label="All"
             active={category === 'All'}

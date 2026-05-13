@@ -59,6 +59,13 @@ export type ExerciseDef = {
   targetRIR: string
   /** uses an Olympic bar — enables plate calculator */
   isBarbell: boolean
+  /**
+   * Bodyweight movement (push-up, sit-up, dip, etc.). When true and the user
+   * leaves the kg field blank, volume math uses their latest logged
+   * bodyweight. A non-null kg value is treated as ADDED weight (weighted
+   * dips, weighted pull-ups, etc.) on top of bodyweight.
+   */
+  isBodyweight?: boolean
   /** form cues to display */
   cues: string[]
   /** common errors to avoid */
@@ -212,6 +219,11 @@ export type Settings = {
    * `getExerciseDef` at read time so cue/video/muscle changes flow through.
    */
   customProgram?: CustomProgramDay[]
+  /**
+   * If true, the "Add exercise" picker filters to bodyweight-friendly moves
+   * only. Useful when traveling / training at home without equipment.
+   */
+  homeMode?: boolean
 }
 
 export type CustomProgramDay = {

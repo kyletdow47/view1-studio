@@ -72,6 +72,22 @@ export const MUSCLE_MAP: Record<
     primary: ['Chest'],
     secondary: ['Triceps', 'Front Delts', 'Abs'],
   },
+  'Diamond Push-Up': {
+    primary: ['Triceps', 'Chest'],
+    secondary: ['Front Delts'],
+  },
+  'Incline Push-Up': {
+    primary: ['Chest'],
+    secondary: ['Triceps', 'Front Delts'],
+  },
+  'Decline Push-Up': {
+    primary: ['Chest', 'Front Delts'],
+    secondary: ['Triceps'],
+  },
+  'Pike Push-Up': {
+    primary: ['Front Delts'],
+    secondary: ['Triceps', 'Side Delts'],
+  },
 
   // ---------- Back ----------
   'Lat Pulldown (V-Bar)': {
@@ -191,6 +207,33 @@ export const MUSCLE_MAP: Record<
     secondary: ['Biceps', 'Glutes', 'Hamstrings'],
   },
   'Jump Rope': { primary: ['Calves'], secondary: ['Forearms', 'Quads'] },
+
+  // ---------- Bodyweight / Home ----------
+  'Sit-Up': { primary: ['Abs'], secondary: ['Obliques'] },
+  Crunch: { primary: ['Abs'] },
+  'Bicycle Crunch': { primary: ['Obliques', 'Abs'] },
+  'Bodyweight Squat': { primary: ['Quads'], secondary: ['Glutes'] },
+  'Pistol Squat': {
+    primary: ['Quads'],
+    secondary: ['Glutes', 'Hamstrings', 'Abs'],
+  },
+  'Bodyweight Lunge': {
+    primary: ['Quads'],
+    secondary: ['Glutes', 'Hamstrings'],
+  },
+  'Glute Bridge': { primary: ['Glutes'], secondary: ['Hamstrings'] },
+  'Mountain Climber': {
+    primary: ['Abs'],
+    secondary: ['Front Delts', 'Quads', 'Obliques'],
+  },
+  Burpee: {
+    primary: ['Quads', 'Chest'],
+    secondary: ['Triceps', 'Front Delts', 'Calves', 'Abs'],
+  },
+  'Inverted Row': {
+    primary: ['Upper Back', 'Lats'],
+    secondary: ['Biceps', 'Rear Delts'],
+  },
 
   // ---------- Other ----------
   'Farmer’s Carry': {

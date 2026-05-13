@@ -8,7 +8,7 @@ import { computeSessionStats } from '@/lib/session-stats'
 import { fmtDuration } from '@/lib/duration'
 import { sendSessionToTrainer } from '@/lib/send-to-trainer'
 import { syncWorkoutToHealth } from '@/lib/health-sync'
-import { useAllPRs } from '@/db/hooks'
+import { useAllPRs, useAllWeights } from '@/db/hooks'
 import type { Settings, WorkoutLog } from '@/types'
 
 type Props = {
@@ -19,7 +19,8 @@ type Props = {
 }
 
 export function SessionSummaryModal({ open, onClose, log, settings }: Props) {
-  const stats = useMemo(() => computeSessionStats(log), [log])
+  const weights = useAllWeights()
+  const stats = useMemo(() => computeSessionStats(log, weights), [log, weights])
   const prs = useAllPRs()
   const { toast } = useToast()
 

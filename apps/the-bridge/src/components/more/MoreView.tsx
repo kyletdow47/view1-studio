@@ -396,6 +396,25 @@ function SettingsSection({ onBack }: { onBack: () => void }) {
       </Card>
 
       <Card>
+        <h3 className="text-sm font-semibold mb-1">Home workout mode</h3>
+        <p className="text-[11px] text-white/55 mb-3">
+          When on, the "Add exercise" picker defaults to bodyweight-only.
+          Tap the 🏠 chip in the picker to toggle per-session.
+        </p>
+        <button
+          onClick={() => setDraft((s) => ({ ...s, homeMode: !s.homeMode }))}
+          className={cn(
+            'w-full h-[44px] rounded-md text-sm font-semibold transition-all',
+            draft.homeMode
+              ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40'
+              : 'bg-white/8 text-white/65 border border-white/12'
+          )}
+        >
+          {draft.homeMode ? '🏠 Home mode on' : 'Gym mode (default)'}
+        </button>
+      </Card>
+
+      <Card>
         <h3 className="text-sm font-semibold mb-1">Trainer project</h3>
         <p className="text-[11px] text-white/55 mb-3">
           Paste the URL of the Claude project that coaches you. "Send to
